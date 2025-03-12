@@ -33,6 +33,7 @@ async function instrumentFiles() {
 }
 
 async function globalSetup() {
+  // Remove any existing coverage or mock files
   for (const dir of ["coverage", "mock-files"]) {
     await fs.rm(`${config().paths.playwright}/${dir}`, {
       recursive: true,

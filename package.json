@@ -28,7 +28,7 @@
     "postuninstall": "electron-builder install-app-deps",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "lb-nyc cross-env TS_NODE_PROJECT=./src/__tests__/tsconfig.json lb-mocha",
-    "pretest:e2e": "npm run compile",
+    "pretest:e2e": "npm run compile --ignore-scripts && npm run postcompile",
     "test:e2e": "playwright test",
     "test:e2e:show-report": "npx playwright show-report .playwright/report",
     "generate:modpack-files": "ts-node src/__tests__/e2e/util/generate-modpack-files.ts"
