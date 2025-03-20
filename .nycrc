@@ -1,15 +1,25 @@
 {
   "extends": "@istanbuljs/nyc-config-typescript",
   "include": ["src"],
-  "exclude": ["src/__tests__/**",  "**/*.d.ts", "**/*.eslintrc.js", "src/main/controllers/**/*", "src/renderer/**/*"],
+  "exclude": [
+    "src/__tests__/**",
+    "**/*.d.ts",
+    "**/*.eslintrc.js",
+    "src/main/controllers/**/*",
+    "src/renderer/**/*",
+    "src/main.ts",
+    "src/main/preload.ts",
+    "src/main/application.ts",
+    "src/main/logger.ts"
+  ],
   "extension": [".js", ".ts"],
   "reporter": ["text", "html"],
   "exclude-after-remap": false,
   "check-coverage": true,
   "per-file": true,
   "all": true,
-  "branches": 0,
-  "lines": 0,
-  "functions": 0,
-  "statements": 0
+  "branches": 100,
+  "lines": 100,
+  "functions": 100,
+  "statements": 100
 }
