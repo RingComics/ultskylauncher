@@ -29,7 +29,10 @@ const UUID = (): string => {
  * - wabbajack install settings
  * - mock modpack install
  */
-export const createMockFiles = async (test: typeof Test) => {
+export const createMockFiles = async (
+  test: typeof Test,
+  setModpack: boolean
+) => {
   // Create an area for the Electron app to store config/files.
   const mockFiles = `${config().paths.mockFiles}/${test.info().testId}`;
   await fs.mkdir(mockFiles, { recursive: true });
@@ -39,6 +42,16 @@ export const createMockFiles = async (test: typeof Test) => {
     getMockAPPDATALocal(mockModpackInstall),
     `${mockFiles}/local`
   );
+
+  if (setModpack) {
+    await fs.mkdir(`${mockFiles}/config`, { recursive: true });
+    await fs.writeFile(
+      `${mockFiles}/config/userPreferences.json`,
+      JSON.stringify({
+        MOD_DIRECTORY: `${mockModpackInstall}`,
+      })
+    );
+  }
 
   return mockFiles;
 };
@@ -51,9 +64,10 @@ export interface StartTestAppReturn {
 }
 
 export const startTestApp = async (
-  test: typeof Test
+  test: typeof Test,
+  setModpack = false
 ): Promise<StartTestAppReturn> => {
-  const mockFiles = await createMockFiles(test);
+  const mockFiles = await createMockFiles(test, setModpack);
 
   // Launch Electron app.
   const electronApp = await electron.launch({
@@ -61,6 +75,7 @@ export const startTestApp = async (
     env: {
       CONFIG_PATH: `${mockFiles}/config`,
       APPDATA: `${mockFiles}/APPDATA`,
+      MULTIPLE_INSTANCE: "true",
     },
     // recordVideo: { dir: "test-results" },
   });

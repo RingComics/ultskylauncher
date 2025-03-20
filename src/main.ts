@@ -7,10 +7,12 @@ import { newLogInstance } from "./main/logger";
 
 const logger = newLogInstance("Startup logger");
 
-const isSingleInstance = app.requestSingleInstanceLock();
-if (process.env["MULTIPLE_INSTANCE"] !== "true" && !isSingleInstance) {
-  logger.debug("Secondary instance opened, quitting");
-  app.quit();
+if (process.env["MULTIPLE_INSTANCE"] !== "true") {
+  const isSingleInstance = app.requestSingleInstanceLock();
+  if (!isSingleInstance) {
+    logger.debug("Secondary instance opened, quitting");
+    app.quit();
+  }
 }
 
 // Ensure it's easy to tell where the logs for this application start
@@ -64,6 +66,7 @@ const start = async () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
+// TODO this should probably use `app.whenReady().then(()` instead
 app.on("ready", () => {
   start()
     .then(() => logger.debug("App started"))

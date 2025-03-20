@@ -8,7 +8,10 @@
 
     <div class="c-header__links l-row l-no-flex-grow">
       <div v-if="modpack.website" class="c-header__link l-center-vertically">
-        <BaseLink :href="modpack.website" :hover-style="true"
+        <BaseLink
+          :href="modpack.website"
+          :hover-style="true"
+          data-testid="website-link"
           >Website
         </BaseLink>
       </div>

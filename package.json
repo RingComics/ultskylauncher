@@ -38,7 +38,10 @@
       "src/**"
     ],
     "ignore": [
-      "src/renderer/**"
+      "src/renderer/**",
+      "**/*.test.ts",
+      "**/*.e2e.ts",
+      "src/__tests__/**"
     ],
     "exec": "npm run start",
     "ext": "*"
