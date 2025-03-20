@@ -14,7 +14,10 @@ test.describe("Header links", () => {
   ];
 
   test.beforeAll(async () => {
-    ({ window, closeTestApp } = await startTestApp(test, true));
+    ({ window, closeTestApp } = await startTestApp(test, {
+      setModpack: true,
+      waitForPreload: true,
+    }));
   });
 
   test.afterAll(async () => {

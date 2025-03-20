@@ -66,7 +66,12 @@ async function displayCoverage(): Promise<void> {
 }
 
 const clearMockFiles = async () => {
-  await fs.rm(`${config().paths.mockFiles}`, { recursive: true, force: true });
+  if (process.env["CLEAR_MOCK_FILES"] !== "false") {
+    await fs.rm(`${config().paths.mockFiles}`, {
+      recursive: true,
+      force: true,
+    });
+  }
 };
 
 async function globalTeardown() {

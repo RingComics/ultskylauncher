@@ -33,6 +33,7 @@ export const createMockFiles = async (
   test: typeof Test,
   setModpack: boolean
 ) => {
+  console.log(test.info().title.replace(/ /g, "-").toLowerCase());
   // Create an area for the Electron app to store config/files.
   const mockFiles = `${config().paths.mockFiles}/${UUID()}/${test
     .info()
@@ -59,6 +60,11 @@ export const createMockFiles = async (
   return mockFiles;
 };
 
+export interface StartTestAppOptions {
+  setModpack?: boolean;
+  waitForPreload?: boolean;
+}
+
 export interface StartTestAppReturn {
   mockFiles: string;
   window: Page;
@@ -68,8 +74,9 @@ export interface StartTestAppReturn {
 
 export const startTestApp = async (
   test: typeof Test,
-  setModpack = false
+  options: StartTestAppOptions = {}
 ): Promise<StartTestAppReturn> => {
+  const { setModpack = false, waitForPreload = false } = options;
   const mockFiles = await createMockFiles(test, setModpack);
 
   // Launch Electron app.
@@ -96,6 +103,12 @@ export const startTestApp = async (
     window.on("console", console.log);
   }
 
+  // If waitForPreload is true, wait for the "launch-game" button to be visible.
+  // The navigation only becomes visible once all preload checks have completed (e.g. auto update, setting modpack, etc.)
+  if (waitForPreload) {
+    await window.getByTestId("launch-game").waitFor({ state: "visible" });
+  }
+
   const closeTestApp = async () => {
     await saveCoverage(
       window,
@@ -110,8 +123,6 @@ export const startTestApp = async (
     );
 
     await electronApp.close();
-
-    await fs.rm(mockFiles, { recursive: true, force: true, maxRetries: 5 });
   };
 
   return { mockFiles, window, electronApp, closeTestApp };

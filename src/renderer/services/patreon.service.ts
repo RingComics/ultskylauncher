@@ -1,4 +1,5 @@
 import type { CacheService } from "@/renderer/services/cache.service";
+import { logger } from "@/main/logger";
 
 export class PatreonService {
   private patrons: Patron[] = [];
@@ -42,6 +43,7 @@ export class PatreonService {
         return this.patrons;
       }
 
+      logger.log("Getting Patrons from API");
       const response = await fetch("https://ultsky.phinocio.com/api/patreon");
       const data = (await response.json()) as { patrons: Patron[] };
       // Shuffle the array to show different Patrons each time

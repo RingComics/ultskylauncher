@@ -6,7 +6,7 @@
     }"
   >
     <div class="l-row">
-      <TheNavigation v-if="!preloadCheck" />
+      <TheNavigation v-if="!preloadRoute" />
       <div class="l-column">
         <div class="c-app__page l-column">
           <TheHeader class="l-no-flex-grow" />
@@ -51,7 +51,7 @@ export default class AppPage extends Vue {
   @Prop({ default: "column" }) layout!: "row" | "column";
 
   clickEventsEnabled = true;
-  preloadCheck = true;
+  preloadRoute = true;
 
   private eventService = injectStrict(SERVICE_BINDINGS.EVENT_SERVICE);
 
@@ -60,7 +60,7 @@ export default class AppPage extends Vue {
     watch(
       () => route.name,
       () => {
-        this.preloadCheck = route.meta?.["preload"] as boolean;
+        this.preloadRoute = route.meta?.["preload"] as boolean;
       }
     );
 
