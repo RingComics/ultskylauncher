@@ -34,7 +34,10 @@ export const createMockFiles = async (
   setModpack: boolean
 ) => {
   // Create an area for the Electron app to store config/files.
-  const mockFiles = `${config().paths.mockFiles}/${test.info().testId}`;
+  const mockFiles = `${config().paths.mockFiles}/${UUID()}/${test
+    .info()
+    .title.replace(/ /g, "-")
+    .toLowerCase()}`;
   await fs.mkdir(mockFiles, { recursive: true });
   const mockModpackInstall = `${mockFiles}/mock-modpack-install`;
   createDirectoryStructure(mockModpack, mockModpackInstall);
@@ -94,8 +97,6 @@ export const startTestApp = async (
   }
 
   const closeTestApp = async () => {
-    await fs.rm(mockFiles, { recursive: true });
-
     await saveCoverage(
       window,
       "renderer",
@@ -108,7 +109,9 @@ export const startTestApp = async (
       () => (global as GlobalWithCoverage).__coverage__
     );
 
-    return electronApp.close();
+    await electronApp.close();
+
+    await fs.rm(mockFiles, { recursive: true, force: true, maxRetries: 5 });
   };
 
   return { mockFiles, window, electronApp, closeTestApp };
