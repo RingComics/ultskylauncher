@@ -34,10 +34,9 @@ export const createMockFiles = async (
   setModpack: boolean
 ) => {
   // Create an area for the Electron app to store config/files.
-  const mockFiles = `${config().paths.mockFiles}/${test
-    .info()
-    .title.replace(/ /g, "-")
-    .toLowerCase()}/${UUID()}`;
+  const mockFiles = `${config().paths.mockFiles}/${
+    test.info().titlePath[1]
+  }/${UUID()}`;
   await fs.mkdir(mockFiles, { recursive: true });
   const mockModpackInstall = `${mockFiles}/mock-modpack-install`;
   createDirectoryStructure(mockModpack, mockModpackInstall);

@@ -46,23 +46,21 @@ async function displayCoverage(): Promise<void> {
 
   // create a context for report generation
   const context = libReport.createContext({
-    // dir: 'report/output/dir',
-    // The summarizer to default to (may be overridden by some reports)
-    // values can be nested/flat/pkg. Defaults to 'pkg'
+    dir: `${config().paths.coverage}/html-report`,
     defaultSummarizer: "nested",
-    // watermarks: configWatermarks,
     coverageMap: mainCoverageMap,
   });
 
-  // create an instance of the relevant report class, passing the
-  // report name e.g. json/html/html-spa/text
-  const report = reports.create("text", {
+  // create the text report
+  const textReport = reports.create("text", {
     skipEmpty: false,
     skipFull: false,
   });
+  textReport.execute(context);
 
-  // call execute to synchronously create and write the report to disk/console
-  report.execute(context);
+  // create the HTML report
+  const htmlReport = reports.create("html", {});
+  htmlReport.execute(context);
 }
 
 const clearMockFiles = async () => {

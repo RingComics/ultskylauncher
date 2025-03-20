@@ -1,7 +1,7 @@
 import { Page, test, expect } from "@playwright/test";
 import { startTestApp, StartTestAppReturn } from "./util/setup";
 
-test.describe("News component", () => {
+test.describe("News", () => {
   let window: Page;
   let closeTestApp: StartTestAppReturn["closeTestApp"];
 
