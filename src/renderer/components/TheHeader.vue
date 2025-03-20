@@ -16,13 +16,26 @@
         </BaseLink>
       </div>
       <div v-if="modpack.wiki" class="c-header__link l-center-vertically">
-        <BaseLink :href="modpack.wiki" :hover-style="true">Wiki</BaseLink>
+        <BaseLink
+          :href="modpack.wiki"
+          :hover-style="true"
+          data-testid="wiki-link"
+          >Wiki</BaseLink
+        >
       </div>
       <div v-if="modpack.roadmap" class="c-header__link l-center-vertically">
-        <BaseLink :href="modpack.roadmap" :hover-style="true">Roadmap</BaseLink>
+        <BaseLink
+          :href="modpack.roadmap"
+          :hover-style="true"
+          data-testid="roadmap-link"
+          >Roadmap</BaseLink
+        >
       </div>
       <div v-if="modpack.wiki" class="c-header__link l-center-vertically">
-        <BaseLink :href="modpack.patreon" :hover-style="true"
+        <BaseLink
+          :href="modpack.patreon"
+          :hover-style="true"
+          data-testid="patreon-link"
           >Patreon
         </BaseLink>
       </div>

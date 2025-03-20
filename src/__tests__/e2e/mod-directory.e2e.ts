@@ -1,5 +1,5 @@
 import { Page, test } from "@playwright/test";
-import { startTestApp, StartTestAppReturn } from "../util/setup";
+import { startTestApp, StartTestAppReturn } from "./util/setup";
 
 test.describe("Mod directory", () => {
   let window: Page;
