@@ -113,8 +113,8 @@ test.describe("News component", () => {
     await window.route("**/api/last-updated", (route) => {
       return route.fulfill({
         status: 200,
-        // eslint-disable-next-line @typescript-eslint/naming-convention
         body: JSON.stringify({
+          // eslint-disable-next-line @typescript-eslint/naming-convention
           last_updated: Math.floor(Date.now() / 1000) - 1800,
         }), // 30 minutes after the cache
       });

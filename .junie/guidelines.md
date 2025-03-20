@@ -4,20 +4,22 @@
 
 When generating code with Junie, the following validation steps must be followed:
 
-1. After code generation, automatically run the test suite using:
+1. After code generation, automatically run the unit tests and e2e tests using:
    ```bash
-   npm run test
+   npm run test:unit
    ```
-
-2. This command will run both unit tests (`npm run test:unit`) and end-to-end tests (`npm run test:e2e`).
-
-3. If any tests fail, Junie should:
+   ```bash
+   npm run test:e2e
+   ```
+   
+2. If any tests fail, Junie should:
    - Analyze the test failures
-   - Remove any output files that it used for the tests (like `output.txt`)
    - Modify the generated code to fix the issues
-   - Run the tests again
+   - Run the tests again but only the failing one (unit or e2e) (if more debug information is needed then `DEBUG=true` can preface the e2e tests for more information)
+   - Proceed to run the other test suite to ensure both have passed with the latest changes
+   - Remove any output files that are used for the tests and junie specifically (like `output.txt`)
 
-4. Continue this process until all tests pass successfully.
+3. Continue this process until all tests pass successfully.
 
 ## Test Command Details
 

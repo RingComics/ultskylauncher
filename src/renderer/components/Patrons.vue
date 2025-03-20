@@ -1,9 +1,10 @@
 <template>
-  <div class="c-patrons">
+  <div class="c-patrons" data-testid="patrons-container">
     <BaseList
       v-if="!failedToGetPatrons && superPatrons.length !== 0"
       :items="superPatrons"
       class="c-patrons__list"
+      data-testid="super-patrons-list"
     >
       <div class="c-patrons__title">
         <div class="l-column l-center-text">
@@ -23,6 +24,7 @@
     <BaseList
       v-if="!failedToGetPatrons && otherPatrons.length !== 0"
       :items="otherPatrons"
+      data-testid="patrons-list"
     >
       <div class="c-patrons__title">
         <div class="c-patrons__star">
@@ -31,7 +33,9 @@
         <div class="c-patrons__title-text">Patrons</div>
       </div>
     </BaseList>
-    <div v-if="failedToGetPatrons">Unable to retrieve Patron list.</div>
+    <div v-if="failedToGetPatrons" data-testid="patrons-error">
+      Unable to retrieve Patron list.
+    </div>
   </div>
 </template>
 
