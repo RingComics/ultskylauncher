@@ -1,14 +1,14 @@
 import fs from "fs";
-import { logger } from "@/main/logger";
-import { ConfigService, userPreferences } from "@/main/services/config.service";
+import { ConfigService } from "@/main/services/config.service";
 import { copy, existsSync } from "fs-extra";
 import { not as isNotJunk } from "junk";
 import { FriendlyDirectoryMap } from "@/modpack-metadata";
 import { USER_PREFERENCE_KEYS } from "@/shared/enums/userPreferenceKeys";
 import { service } from "@loopback/core";
-import { BindingScope, injectable } from "@loopback/context";
+import { BindingScope, inject, injectable } from "@loopback/context";
 import { AdditionalInstruction } from "@/additional-instructions";
 import { InstructionService } from "@/main/services/instruction.service";
+import { Logger, LoggerBinding } from "@/main/logger";
 
 const noEnb = "noEnb";
 type noEnb = typeof noEnb;
@@ -22,11 +22,16 @@ export class EnbService {
   constructor(
     @service(ConfigService) private configService: ConfigService,
     @service(InstructionService)
-    private modpackInstructionsService: InstructionService
+    private modpackInstructionsService: InstructionService,
+    @inject(LoggerBinding) private logger: Logger
   ) {}
 
+  private static getEnbInstruction(instruction: AdditionalInstruction) {
+    return instruction.type === "enb";
+  }
+
   enbDirectory() {
-    return `${userPreferences.get(
+    return `${this.configService.getPreference(
       USER_PREFERENCE_KEYS.MOD_DIRECTORY
     )}/launcher/ENB Presets`;
   }
@@ -34,9 +39,9 @@ export class EnbService {
   async getENBPresets(): Promise<FriendlyDirectoryMap[]> {
     const mappedEnbs = JSON.parse(
       await fs.promises.readFile(
-        `${userPreferences.get(USER_PREFERENCE_KEYS.MOD_DIRECTORY)}/launcher/${
-          this.ENBNameMappingFile
-        }`,
+        `${this.configService.getPreference(
+          USER_PREFERENCE_KEYS.MOD_DIRECTORY
+        )}/launcher/${this.ENBNameMappingFile}`,
         "utf-8"
       )
     ) as FriendlyDirectoryMap[];
@@ -85,7 +90,7 @@ export class EnbService {
     const presets = await this.getENBPresets();
     const isInList = presets.filter(({ real }) => real === preset).length > 0;
     if (!isInList) {
-      logger.debug(
+      this.logger.debug(
         `enb preset "${preset}" in not in preset list: ${JSON.stringify(
           presets
         )}`
@@ -116,12 +121,12 @@ export class EnbService {
    * Defined in additional-instructions.json
    */
   async postSetEnb(enb: string) {
-    logger.info("Handling additional enb set instructions");
+    this.logger.info("Handling additional enb set instructions");
     const modpackEnbInstructions = this.modpackInstructionsService
       .getInstructions()
       .filter(EnbService.getEnbInstruction);
     if (modpackEnbInstructions) {
-      logger.debug(
+      this.logger.debug(
         `Found modpack instructions: ${JSON.stringify(modpackEnbInstructions)}`
       );
       await this.modpackInstructionsService.execute(
@@ -131,17 +136,13 @@ export class EnbService {
     }
   }
 
-  private static getEnbInstruction(instruction: AdditionalInstruction) {
-    return instruction.type === "enb";
-  }
-
   async backupOriginalENBs() {
     const ENBBackupDirectory = `${this.configService.backupDirectory()}/ENB Presets`;
     const backupExists = existsSync(ENBBackupDirectory);
-    logger.debug(`Backup for ENBs exists: ${backupExists}`);
+    this.logger.debug(`Backup for ENBs exists: ${backupExists}`);
 
     if (!backupExists) {
-      logger.info("No ENB backup exists. Backing up...");
+      this.logger.info("No ENB backup exists. Backing up...");
       await fs.promises.mkdir(this.configService.backupDirectory(), {
         recursive: true,
       });
@@ -151,11 +152,11 @@ export class EnbService {
   }
 
   async restoreENBPresets() {
-    logger.info("Restoring ENB presets");
+    this.logger.info("Restoring ENB presets");
     const ENBBackupDirectory = `${this.configService.backupDirectory()}/ENB Presets`;
     await copy(ENBBackupDirectory, this.enbDirectory(), { overwrite: true });
     await this.copyEnbFiles(
-      userPreferences.get(USER_PREFERENCE_KEYS.ENB_PROFILE),
+      this.configService.getPreference(USER_PREFERENCE_KEYS.ENB_PROFILE),
       false
     );
   }
@@ -195,37 +196,37 @@ export class EnbService {
    * so all presets need to be read to ensure everything is removed
    */
   async deleteAllENBFiles() {
-    logger.info("Deleting ENB Files");
+    this.logger.info("Deleting ENB Files");
 
     const existingENBFiles = await this.getExistingENBFiles();
 
     for (const file of existingENBFiles) {
       const fileWithPath = `${this.configService.skyrimDirectory()}/${file}`;
-      logger.debug(`Deleting ENB file ${file} with path ${fileWithPath}`);
+      this.logger.debug(`Deleting ENB file ${file} with path ${fileWithPath}`);
       const isDirectory = (await fs.promises.lstat(fileWithPath)).isDirectory();
       await fs.promises.rm(fileWithPath, { recursive: isDirectory });
     }
   }
 
   async syncENBFromGameToPresets(preset: string | noEnb) {
-    logger.info(`Syncing ENB changes back to presets for ${preset}`);
+    this.logger.info(`Syncing ENB changes back to presets for ${preset}`);
     if (preset !== noEnb) {
       const enbFiles = await this.getENBFilesForPreset(preset);
-      logger.debug(
+      this.logger.debug(
         `ENB files that need to be synced: ${JSON.stringify(enbFiles)}`
       );
 
       for (const file of enbFiles) {
         const fileWithPath = `${this.configService.skyrimDirectory()}/${file}`;
         const fileDestination = `${this.enbDirectory()}/${preset}/${file}`;
-        logger.debug(`Copying ${file} to ${fileDestination}`);
+        this.logger.debug(`Copying ${file} to ${fileDestination}`);
         if (existsSync(fileWithPath)) {
           await copy(fileWithPath, fileDestination, { overwrite: true });
         }
       }
     }
 
-    logger.info("Finished syncing ENB presets");
+    this.logger.info("Finished syncing ENB presets");
   }
 
   /**
@@ -234,10 +235,10 @@ export class EnbService {
    * @param sync - Whether to sync the changes from Stock Game back to the ENB Preset directory
    */
   async copyEnbFiles(profile: string | noEnb, sync = true) {
-    logger.info(`Copying ${profile} ENB Files prerequisite`);
+    this.logger.info(`Copying ${profile} ENB Files prerequisite`);
 
     const previousProfile =
-      (userPreferences.get(
+      (this.configService.getPreference(
         USER_PREFERENCE_KEYS.PREVIOUS_ENB_PROFILE
       ) as string) || "";
     if (sync && previousProfile && previousProfile !== noEnb) {
@@ -247,7 +248,7 @@ export class EnbService {
 
     await this.deleteAllENBFiles();
 
-    logger.info(`Copying ${profile} ENB Files`);
+    this.logger.info(`Copying ${profile} ENB Files`);
 
     // All ENB files have been deleted already so nothing to do if the preset is noEnb
     if (profile !== noEnb) {
@@ -256,7 +257,7 @@ export class EnbService {
       for (const file of ENBFiles) {
         const fileWithPath = `${this.enbDirectory()}/${profile}/${file}`;
         const fileDestination = `${this.configService.skyrimDirectory()}/${file}`;
-        logger.debug(
+        this.logger.debug(
           `Copy ENB file ${file} with path ${fileWithPath} to ${fileDestination}`
         );
         await copy(fileWithPath, fileDestination);

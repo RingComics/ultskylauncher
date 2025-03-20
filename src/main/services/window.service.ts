@@ -3,9 +3,9 @@ import { URL } from "url";
 import { readFile } from "fs";
 import path from "path";
 import { appRoot, isDevelopment } from "@/main/services/config.service";
-import { logger } from "@/main/logger";
-import { BindingScope, injectable } from "@loopback/context";
+import { BindingScope, inject, injectable } from "@loopback/context";
 import contextMenu from "electron-context-menu";
+import { Logger, LoggerBinding } from "@/main/logger";
 
 @injectable({
   scope: BindingScope.SINGLETON,
@@ -13,20 +13,7 @@ import contextMenu from "electron-context-menu";
 export class WindowService {
   private window!: BrowserWindow;
 
-  private static handleFatalError(message: string, err: string | Error) {
-    logger.error(`${message}. ${err}`);
-
-    dialog.showMessageBoxSync({
-      type: "error",
-      title: "A fatal error occurred!",
-      message: `
-    ${message}
-    ${err}
-    `,
-    });
-
-    app.quit();
-  }
+  constructor(@inject(LoggerBinding) private logger: Logger) {}
 
   getWindow() {
     return this.window;
@@ -37,17 +24,17 @@ export class WindowService {
   }
 
   quit() {
-    logger.debug("Quit application");
+    this.logger.debug("Quit application");
     app.quit();
   }
 
   reload() {
-    logger.debug("Reload window");
+    this.logger.debug("Reload window");
     this.getWindow().reload();
   }
 
   minimize() {
-    logger.debug("Minimize window");
+    this.logger.debug("Minimize window");
     this.getWindow().minimize();
   }
 
@@ -60,10 +47,10 @@ export class WindowService {
   }
 
   async createBrowserWindow() {
-    logger.debug("Creating browser window");
+    this.logger.debug("Creating browser window");
 
     if (this.window) {
-      logger.debug("Browser window already exists");
+      this.logger.debug("Browser window already exists");
       return;
     }
 
@@ -96,12 +83,9 @@ export class WindowService {
       });
     } catch (error) {
       if (error instanceof Error) {
-        WindowService.handleFatalError(
-          "Unable to create browser window",
-          error
-        );
+        this.handleFatalError("Unable to create browser window", error);
       } else {
-        WindowService.handleFatalError(
+        this.handleFatalError(
           "Unable to create browser window with unknown error",
           ""
         );
@@ -132,12 +116,9 @@ export class WindowService {
       }
     } catch (error) {
       if (error instanceof Error) {
-        WindowService.handleFatalError(
-          "Unable to load application page",
-          error
-        );
+        this.handleFatalError("Unable to load application page", error);
       } else {
-        WindowService.handleFatalError(
+        this.handleFatalError(
           "Unable to load application page with unknown error",
           ""
         );
@@ -145,12 +126,27 @@ export class WindowService {
     }
   }
 
+  private handleFatalError(message: string, err: string | Error) {
+    this.logger.error(`${message}. ${err}`);
+
+    dialog.showMessageBoxSync({
+      type: "error",
+      title: "A fatal error occurred!",
+      message: `
+    ${message}
+    ${err}
+    `,
+    });
+
+    app.quit();
+  }
+
   private async navigateInWindow(url: string) {
     // If the browser window is already open, a URL change will cause electron to think the request is aborted.
     // When the app loads a URL, the hash is changed immediately. If the window is already open,
     // electron considers this a change in URl and a failure so it errors.
     // If the window is open, just navigate from the browser instead.
-    logger.debug(`Loading url: ${url}`);
+    this.logger.debug(`Loading url: ${url}`);
     if (this.window.isVisible()) {
       await this.window.webContents.executeJavaScript(
         `window.location.href = '${url}'`
@@ -172,7 +168,7 @@ export class WindowService {
 
       readFile(path.join(appRoot, pathName), (error, data) => {
         if (error) {
-          logger.error(
+          this.logger.error(
             `Failed to read ${pathName} on ${scheme} protocol`,
             error
           );

@@ -11,6 +11,7 @@ import { FriendlyDirectoryMap } from "@/modpack-metadata";
 import { USER_PREFERENCE_KEYS } from "@/shared/enums/userPreferenceKeys";
 import { ProfileService } from "@/main/services/profile.service";
 import fs from "fs";
+import { mockLogger } from "@/__tests__/unit/support/mocks/logger.mock";
 
 describe("Graphics service", () => {
   let mockConfigService: StubbedInstanceWithSinonAccessor<ConfigService>;
@@ -22,7 +23,8 @@ describe("Graphics service", () => {
     mockProfileService = createStubInstance(ProfileService);
     graphicsService = new GraphicsService(
       mockConfigService,
-      mockProfileService
+      mockProfileService,
+      mockLogger()
     );
   });
 
@@ -109,7 +111,7 @@ describe("Graphics service", () => {
     expect(graphics).to.eql(expected);
   });
 
-  it("should get the graphics preference", () => {
+  it("should get the graphics preference", async () => {
     mockConfigService.stubs.getPreference
       .withArgs(USER_PREFERENCE_KEYS.GRAPHICS)
       .returns("mock-graphics-preference");
@@ -118,7 +120,7 @@ describe("Graphics service", () => {
     );
   });
 
-  it("should set the graphics preference", () => {
+  it("should set the graphics preference", async () => {
     graphicsService.setGraphicsPreference("mock-preference");
     sinon.assert.calledWith(
       mockConfigService.stubs.setPreference,

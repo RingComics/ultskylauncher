@@ -1,22 +1,18 @@
 import * as os from "os";
 import { promisify } from "util";
 import childProcess from "child_process";
-import {
-  ConfigService,
-  isDevelopment,
-  userPreferences,
-} from "@/main/services/config.service";
+import { ConfigService, isDevelopment } from "@/main/services/config.service";
 import { parse, stringify } from "js-ini";
 import fs from "fs";
 import { IIniObjectSection } from "js-ini/src/interfaces/ini-object-section";
 import { screen } from "electron";
 import { USER_PREFERENCE_KEYS } from "@/shared/enums/userPreferenceKeys";
 import { Resolution } from "@/Resolution";
-import { logger } from "@/main/logger";
-import { BindingScope, injectable } from "@loopback/context";
+import { BindingScope, inject, injectable } from "@loopback/context";
 import { service } from "@loopback/core";
 import { name as modpackName } from "@/modpack.json";
 import { InstructionService } from "@/main/services/instruction.service";
+import { Logger, LoggerBinding } from "@/main/logger";
 
 @injectable({
   scope: BindingScope.SINGLETON,
@@ -28,7 +24,8 @@ export class ResolutionService {
   constructor(
     @service(ConfigService) private configService: ConfigService,
     @service(InstructionService)
-    private instructionsService: InstructionService
+    private instructionsService: InstructionService,
+    @inject(LoggerBinding) private logger: Logger
   ) {}
 
   getResourcePath() {
@@ -73,7 +70,9 @@ export class ResolutionService {
     const closestRatio = supportedRatios.find(
       (x) => x.value === closestValue
     )?.key;
-    logger.debug(`Found closest ratio for ${width}x${height}: ${closestRatio}`);
+    this.logger.debug(
+      `Found closest ratio for ${width}x${height}: ${closestRatio}`
+    );
     return closestRatio;
   }
 
@@ -83,7 +82,9 @@ export class ResolutionService {
       .filter((x) => x.action === "disable-ultra-widescreen");
     this.ultraWidescreenDisabled =
       (await this.instructionsService.execute(instructions)) ?? false;
-    logger.debug(`Ultra-widescreen disabled: ${this.ultraWidescreenDisabled}`);
+    this.logger.debug(
+      `Ultra-widescreen disabled: ${this.ultraWidescreenDisabled}`
+    );
   }
 
   async isUnsupportedResolution(resolution: Resolution) {
@@ -140,7 +141,7 @@ export class ResolutionService {
       childProcess.exec
     )(`"${this.getResourcePath()}/tools/QRes.exe" /L`);
     if (stderr) {
-      logger.error(`Error getting resolutions ${stderr}`);
+      this.logger.error(`Error getting resolutions ${stderr}`);
       throw new Error(stderr);
     }
 
@@ -176,10 +177,10 @@ export class ResolutionService {
   }
 
   async getResolutions(): Promise<Resolution[]> {
-    logger.debug("Getting resolutions");
+    this.logger.debug("Getting resolutions");
 
     if (this.resolutionsCache) {
-      logger.debug(
+      this.logger.debug(
         `Resolutions cached ${JSON.stringify(this.resolutionsCache)}`
       );
       return this.resolutionsCache;
@@ -207,12 +208,14 @@ export class ResolutionService {
           height: Number(resolution.split("x")[1]),
         }));
 
-      logger.debug(`Supported resolutions: ${JSON.stringify(resolutions)}`);
+      this.logger.debug(
+        `Supported resolutions: ${JSON.stringify(resolutions)}`
+      );
 
       // Sometimes, QRes.exe cannot recognise some resolutions.
       // As a safety measure, add the users current resolution if it wasn't detected.
       if (!this.resolutionsContain(resolutions, currentResolution)) {
-        logger.debug(
+        this.logger.debug(
           `Native resolution (${JSON.stringify(
             currentResolution
           )}) not found. Adding to the list.`
@@ -230,7 +233,7 @@ export class ResolutionService {
 
       const sortedResolutions = resolutions.sort(this.sortResolutions);
 
-      logger.debug(
+      this.logger.debug(
         `Resolutions: ${sortedResolutions.map(
           ({ width, height }) => `${width}x${height}`
         )}`
@@ -273,18 +276,18 @@ export class ResolutionService {
       );
     }
 
-    logger.info(
+    this.logger.info(
       `Setting borderless upscale for ${width}x${height}: ${borderlessUpscale}`
     );
     return borderlessUpscale;
   }
 
   async setResolutionInGraphicsSettings() {
-    const { width, height } = userPreferences.get(
+    const { width, height } = this.configService.getPreference(
       USER_PREFERENCE_KEYS.RESOLUTION
     ) as Resolution;
 
-    logger.info(
+    this.logger.info(
       `Setting resolution in ${this.skyrimGraphicsSettingsPath()} to ${width} x ${height}`
     );
     const SkyrimGraphicSettings = parse(

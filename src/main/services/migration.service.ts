@@ -1,22 +1,23 @@
-import { service } from "@loopback/core";
+import { inject, service } from "@loopback/core";
 import { GraphicsService } from "@/main/services/graphics.service";
-import { logger } from "@/main/logger";
 import { ProfileService } from "@/main/services/profile.service";
 import fs from "fs";
 import path from "path";
 import { ConfigService } from "@/main/services/config.service";
 import { copy } from "fs-extra";
 import { asyncFilter } from "@/shared/util/asyncFilter";
+import { Logger, LoggerBinding } from "@/main/logger";
 
 export class MigrationService {
+  private standardProfileName = "0_Wildlander-STANDARD";
+  private performanceProfileName = "0_Wildlander-PERFORMANCE";
+
   constructor(
     @service(GraphicsService) private graphicsService: GraphicsService,
     @service(ProfileService) private profileService: ProfileService,
-    @service(ConfigService) private configService: ConfigService
+    @service(ConfigService) private configService: ConfigService,
+    @inject(LoggerBinding) private logger: Logger
   ) {}
-
-  private standardProfileName = "0_Wildlander-STANDARD";
-  private performanceProfileName = "0_Wildlander-PERFORMANCE";
 
   /**
    * Wildlander originally shipped with graphics settings in the profiles.
@@ -34,44 +35,50 @@ export class MigrationService {
       this.performanceProfileName
     }`;
 
-    logger.debug("Separate profile from graphics migration");
+    this.logger.debug("Separate profile from graphics migration");
 
     if (!(await this.graphicsService.graphicsExist())) {
-      logger.debug("Creating graphics presets from profiles");
+      this.logger.debug("Creating graphics presets from profiles");
       const profiles = await this.profileService.getProfileDirectories();
 
-      logger.debug(`Creating ${this.graphicsService.graphicsMappingFile()}`);
+      this.logger.debug(
+        `Creating ${this.graphicsService.graphicsMappingFile()}`
+      );
       await copy(
         this.profileService.profileMappingFile(),
         this.graphicsService.graphicsMappingPath()
       );
 
-      logger.debug("Creating new standard profile");
+      this.logger.debug("Creating new standard profile");
       await this.createNewProfiles(
         standardProfilePath,
         potatoProfilePath,
         profiles
       );
 
-      logger.debug("Moving graphics out of profiles");
+      this.logger.debug("Moving graphics out of profiles");
       await this.moveGraphicsFromProfiles(profiles);
 
-      logger.debug("Create new mapped profile file");
+      this.logger.debug("Create new mapped profile file");
       await this.createMappedProfileFile();
 
-      logger.debug("Select first profile so the old original one isn't reused");
+      this.logger.debug(
+        "Select first profile so the old original one isn't reused"
+      );
       await this.profileService.setProfilePreference(
         (
           await this.profileService.getProfiles()
         )[0].real
       );
-      logger.debug(
+      this.logger.debug(
         `New profile is ${await this.profileService.getProfilePreference()}`
       );
 
-      logger.debug("Migration complete");
+      this.logger.debug("Migration complete");
     } else {
-      logger.debug("Graphics presets already exist, not performing migration");
+      this.logger.debug(
+        "Graphics presets already exist, not performing migration"
+      );
     }
   }
 
@@ -82,7 +89,7 @@ export class MigrationService {
   ) {
     if (this.configService.backupsExist()) {
       // Create the new profiles from the backup taken when the launcher first ran
-      logger.debug(
+      this.logger.debug(
         "Create the new standard and performance profile from backup"
       );
       const backedUpProfiles =
@@ -95,7 +102,7 @@ export class MigrationService {
       await copy(backedUpPerformanceProfile, performanceProfilePath);
     } else {
       // If there is no backup, just use the first one
-      logger.debug(
+      this.logger.debug(
         "Create the new standard profile from the first profile in the list because no backup exists"
       );
       const performanceProfile =
@@ -129,7 +136,7 @@ export class MigrationService {
       recursive: true,
     });
     const dest = `${graphicsDirectory}/${path.basename(file)}`;
-    logger.debug(`Move ${file} to ${dest}`);
+    this.logger.debug(`Move ${file} to ${dest}`);
     await fs.promises.rename(file, dest);
   }
 

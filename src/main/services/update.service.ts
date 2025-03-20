@@ -5,10 +5,10 @@ import { isDevelopment } from "@/main/services/config.service";
 import fs from "fs";
 import { service } from "@loopback/core";
 import { WindowService } from "@/main/services/window.service";
-import { logger } from "@/main/logger";
-import { BindingScope, injectable } from "@loopback/context";
+import { BindingScope, inject, injectable } from "@loopback/context";
 import { UPDATE_EVENTS } from "@/main/controllers/update/update.events";
 import { ErrorService } from "@/main/services/error.service";
+import { Logger, LoggerBinding } from "@/main/logger";
 
 @injectable({
   scope: BindingScope.SINGLETON,
@@ -22,7 +22,8 @@ export class UpdateService {
   constructor(
     @service(WindowService) private renderService: WindowService,
     @service(ErrorService) private errorService: ErrorService,
-    @service(WindowService) private windowService: WindowService
+    @service(WindowService) private windowService: WindowService,
+    @inject(LoggerBinding) private logger: Logger
   ) {}
 
   async update() {
@@ -32,13 +33,15 @@ export class UpdateService {
     return new Promise<void>((resolve) => {
       // Only register if there is no update available. If there is an update, the window will close itself anyway.
       autoUpdater.on(UPDATE_EVENTS.UPDATE_NOT_AVAILABLE, () => {
-        logger.debug("No update available");
+        this.logger.debug("No update available");
         resolve();
       });
 
       if (this.shouldUpdate()) {
         this.checkForUpdate().catch((error) => {
-          logger.debug(`Update failed with error ${error}. Continuing anyway.`);
+          this.logger.debug(
+            `Update failed with error ${error}. Continuing anyway.`
+          );
           resolve();
         });
       } else {
@@ -51,16 +54,16 @@ export class UpdateService {
     let shouldUpdate;
 
     if (isDevelopment && fs.existsSync(this.devAppUpdatePath)) {
-      logger.debug(`Setting auto update path to ${this.devAppUpdatePath}`);
+      this.logger.debug(`Setting auto update path to ${this.devAppUpdatePath}`);
       autoUpdater.updateConfigPath = this.devAppUpdatePath;
       shouldUpdate = true;
     } else if (isDevelopment) {
-      logger.debug(
+      this.logger.debug(
         "Skipping app update check because we're in development mode"
       );
       shouldUpdate = false;
     } else if (app.getVersion().includes("-")) {
-      logger.debug(
+      this.logger.debug(
         "Skipping app update check because this is a pre-release version"
       );
       shouldUpdate = false;
@@ -73,7 +76,7 @@ export class UpdateService {
 
   registerEvents() {
     autoUpdater.on(UPDATE_EVENTS.UPDATE_AVAILABLE, () => {
-      logger.info(`Update available`);
+      this.logger.info(`Update available`);
       this.renderService.getWebContents().send(UPDATE_EVENTS.UPDATE_AVAILABLE);
     });
 
@@ -84,7 +87,7 @@ export class UpdateService {
     });
 
     autoUpdater.on(UPDATE_EVENTS.UPDATE_DOWNLOADED, () => {
-      logger.debug("Update downloaded");
+      this.logger.debug("Update downloaded");
       autoUpdater.quitAndInstall();
     });
 
@@ -106,7 +109,7 @@ export class UpdateService {
   async checkForUpdate() {
     this.registerEvents();
     const updateCheckResult = await autoUpdater.checkForUpdates();
-    logger.debug("Auto update check result");
-    logger.debug(updateCheckResult);
+    this.logger.debug("Auto update check result");
+    this.logger.debug(updateCheckResult);
   }
 }

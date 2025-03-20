@@ -4,11 +4,11 @@ import {
   WabbajackModpackMetadata,
   WabbajackV2SettingsFile,
 } from "@/wabbajack";
-import { logger } from "@/main/logger";
 import { SystemService } from "@/main/services/system.service";
 import { service } from "@loopback/core";
-import { BindingScope, injectable } from "@loopback/context";
+import { BindingScope, inject, injectable } from "@loopback/context";
 import { ModpackService } from "@/main/services/modpack.service";
+import { Logger, LoggerBinding } from "@/main/logger";
 
 @injectable({
   scope: BindingScope.SINGLETON,
@@ -22,7 +22,8 @@ export class WabbajackService {
 
   constructor(
     @service(SystemService) private systemService: SystemService,
-    @service(ModpackService) private modpackService: ModpackService
+    @service(ModpackService) private modpackService: ModpackService,
+    @inject(LoggerBinding) private logger: Logger
   ) {}
 
   async getInstalledModpacks(): Promise<WabbajackModpackMetadata | null> {
@@ -31,13 +32,17 @@ export class WabbajackService {
     if (fs.existsSync(this.wabbajackV2InstalledModpacksPath)) {
       v2Modpacks = await this.getInstalledModpacksFromWabbajackV2();
     } else {
-      logger.warn(`${this.wabbajackV2InstalledModpacksPath} does not exist.`);
+      this.logger.warn(
+        `${this.wabbajackV2InstalledModpacksPath} does not exist.`
+      );
     }
 
     if (fs.existsSync(this.wabbajackV3InstalledModpacksPath)) {
       v3Modpacks = await this.getInstalledModpacksFromWabbajackV3();
     } else {
-      logger.warn(`${this.wabbajackV3InstalledModpacksPath} does not exist.`);
+      this.logger.warn(
+        `${this.wabbajackV3InstalledModpacksPath} does not exist.`
+      );
     }
 
     const combined = {
@@ -122,10 +127,10 @@ export class WabbajackService {
               modpack !== "$type" && modpacks[modpack].title === modpackName
           )
         : [];
-    logger.info(
+    this.logger.info(
       `Discovered ${wildlanderModpacks.length} ${modpackName} modpack installations in ${this.installedModpacksFilename}`
     );
-    logger.debug(wildlanderModpacks);
+    this.logger.debug(wildlanderModpacks);
     return wildlanderModpacks;
   }
 

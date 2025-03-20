@@ -1,6 +1,6 @@
 import path from "path";
 import childProcess from "child_process";
-import { ConfigService, userPreferences } from "@/main/services/config.service";
+import { ConfigService } from "@/main/services/config.service";
 import psList from "ps-list";
 import { dialog } from "electron";
 import fs from "fs";
@@ -9,17 +9,17 @@ import { IIniObjectSection } from "js-ini/src/interfaces/ini-object-section";
 import { promisify } from "util";
 import { IIniObject } from "js-ini/lib/interfaces/ini-object";
 import { USER_PREFERENCE_KEYS } from "@/shared/enums/userPreferenceKeys";
-import { logger } from "@/main/logger";
 import { EnbService } from "@/main/services/enb.service";
 import { service } from "@loopback/core";
 import { ErrorService } from "@/main/services/error.service";
-import { BindingScope, injectable } from "@loopback/context";
+import { BindingScope, inject, injectable } from "@loopback/context";
 import { ResolutionService } from "@/main/services/resolution.service";
 import { GameService } from "@/main/services/game.service";
 import { ProfileService } from "@/main/services/profile.service";
 import { SystemService } from "@/main/services/system.service";
 import { GraphicsService } from "@/main/services/graphics.service";
 import { ModOrganizerIni } from "@/ModOrganizer.ini";
+import { Logger, LoggerBinding } from "@/main/logger";
 
 export const enum MO2Names {
   MO2EXE = "ModOrganizer.exe",
@@ -40,7 +40,8 @@ export class ModOrganizerService {
     @service(GameService) private gameService: GameService,
     @service(ProfileService) private profileService: ProfileService,
     @service(SystemService) private systemService: SystemService,
-    @service(GraphicsService) private graphicsService: GraphicsService
+    @service(GraphicsService) private graphicsService: GraphicsService,
+    @inject(LoggerBinding) private logger: Logger
   ) {}
 
   private static filterMO2(process: psList.ProcessDescriptor) {
@@ -52,18 +53,20 @@ export class ModOrganizerService {
   }
 
   async closeMO2() {
-    logger.info("Killing MO2 forcefully");
+    this.logger.info("Killing MO2 forcefully");
     (await psList())
       .filter(ModOrganizerService.filterMO2)
       .forEach((mo2Instance) => {
-        logger.debug(`Found process to kill: ${JSON.stringify(mo2Instance)}`);
+        this.logger.debug(
+          `Found process to kill: ${JSON.stringify(mo2Instance)}`
+        );
         process.kill(mo2Instance.pid);
       });
-    logger.info("Killed all MO2 processes");
+    this.logger.info("Killed all MO2 processes");
   }
 
   async handleMO2Running(): Promise<boolean> {
-    logger.info(
+    this.logger.info(
       "MO2 already running. Giving user option to cancel or continue"
     );
     const buttonSelectionIndex = await dialog.showMessageBox({
@@ -95,7 +98,7 @@ export class ModOrganizerService {
   }
 
   async updateSelectedProfile(profile: string) {
-    logger.info(`Updating selected profile to ${profile}`);
+    this.logger.info(`Updating selected profile to ${profile}`);
     const settings = await this.readSettings();
 
     (settings.General as IIniObjectSection)[
@@ -109,7 +112,7 @@ export class ModOrganizerService {
   }
 
   async preventMO2GUIFromShowing() {
-    logger.info(`Preventing the MO2 GUI from showing`);
+    this.logger.info(`Preventing the MO2 GUI from showing`);
     const settings = await this.readSettings();
     // Copy the object so changes don't mutate it
     this.previousMO2Settings = JSON.parse(
@@ -125,7 +128,7 @@ export class ModOrganizerService {
   }
 
   async restoreMO2Settings() {
-    logger.info("Restoring MO2 settings");
+    this.logger.info("Restoring MO2 settings");
     // If we have some previous settings saved, restore them
     if (this.previousMO2Settings) {
       await fs.promises.writeFile(
@@ -134,7 +137,7 @@ export class ModOrganizerService {
       );
       this.previousMO2Settings = null;
     }
-    logger.info("Finished restoring MO2 settings");
+    this.logger.info("Finished restoring MO2 settings");
   }
 
   /**
@@ -145,22 +148,24 @@ export class ModOrganizerService {
     if (await this.isRunning()) {
       const continueLaunching = await this.handleMO2Running();
       if (!continueLaunching) {
-        logger.info("MO2 already running, user chose to abort");
+        this.logger.info("MO2 already running, user chose to abort");
         return false;
       }
     }
 
     await this.resolutionService.setResolutionInGraphicsSettings();
 
-    logger.debug(
-      `User configuration: ${JSON.stringify(userPreferences.store)}`
+    this.logger.debug(
+      `User configuration: ${JSON.stringify(
+        this.configService.getPreferences().store
+      )}`
     );
 
     return true;
   }
 
   async launchMO2() {
-    logger.info("Preparing MO2 for launch");
+    this.logger.info("Preparing MO2 for launch");
 
     try {
       const continueLaunch = await this.prepareForLaunch();
@@ -168,7 +173,7 @@ export class ModOrganizerService {
         return;
       }
 
-      logger.info("Launching MO2");
+      this.logger.info("Launching MO2");
 
       // MO2 will not respect the profile set in the launcher until the config is edited
       await this.updateSelectedProfile(
@@ -176,21 +181,21 @@ export class ModOrganizerService {
       );
 
       const MO2Path = path.join(
-        userPreferences.get(USER_PREFERENCE_KEYS.MOD_DIRECTORY),
+        this.configService.getPreference(USER_PREFERENCE_KEYS.MOD_DIRECTORY),
         MO2Names.MO2EXE
       );
       const { stderr } = await promisify(childProcess.exec)(`"${MO2Path}"`);
       if (stderr) {
-        logger.error(`Error while executing ModOrganizer - ${stderr}`);
+        this.logger.error(`Error while executing ModOrganizer - ${stderr}`);
       }
     } catch (error) {
-      logger.error(`Error while opening MO2 - ${error}`);
+      this.logger.error(`Error while opening MO2 - ${error}`);
       throw error;
     }
   }
 
   async launchGame() {
-    logger.info("Preparing to launch game");
+    this.logger.info("Preparing to launch game");
 
     try {
       const continueLaunch = await this.prepareForLaunch();
@@ -200,16 +205,18 @@ export class ModOrganizerService {
 
       await this.preventMO2GUIFromShowing();
 
-      logger.info("Launching game");
+      this.logger.info("Launching game");
 
       const MO2Path = path.join(
-        userPreferences.get(USER_PREFERENCE_KEYS.MOD_DIRECTORY),
+        this.configService.getPreference(USER_PREFERENCE_KEYS.MOD_DIRECTORY),
         MO2Names.MO2EXE
       );
-      const profile = userPreferences.get(USER_PREFERENCE_KEYS.PRESET);
+      const profile = this.configService.getPreference(
+        USER_PREFERENCE_KEYS.PRESET
+      );
 
       const mo2Command = `"${MO2Path}" -p "${profile}" "moshortcut://:${await this.getFirstCustomExecutableTitle()}"`;
-      logger.debug(`Executing MO2 command: ${mo2Command}`);
+      this.logger.debug(`Executing MO2 command: ${mo2Command}`);
 
       const { stderr } = await promisify(childProcess.exec)(mo2Command);
       await this.postLaunch();
@@ -226,15 +233,15 @@ export class ModOrganizerService {
   }
 
   async postLaunch() {
-    logger.info("MO2 exited, starting post launch actions");
+    this.logger.info("MO2 exited, starting post launch actions");
     await this.gameService.copySkyrimLaunchLogs();
     await this.restoreMO2Settings();
     await this.enbService.syncENBFromGameToPresets(
-      userPreferences.get(USER_PREFERENCE_KEYS.ENB_PROFILE)
+      this.configService.getPreference(USER_PREFERENCE_KEYS.ENB_PROFILE)
     );
     await this.graphicsService.syncGraphicsFromGameToPresets(
-      userPreferences.get(USER_PREFERENCE_KEYS.GRAPHICS),
-      userPreferences.get(USER_PREFERENCE_KEYS.PRESET)
+      this.configService.getPreference(USER_PREFERENCE_KEYS.GRAPHICS),
+      this.configService.getPreference(USER_PREFERENCE_KEYS.PRESET)
     );
   }
 }

@@ -1,7 +1,6 @@
 import path from "path";
-import { BindingScope, injectable } from "@loopback/context";
-import { shell, app } from "electron";
-import { logger } from "@/main/logger";
+import { BindingScope, inject, injectable } from "@loopback/context";
+import { app, shell } from "electron";
 import fs, { createWriteStream } from "fs";
 import { service } from "@loopback/core";
 import { ConfigService } from "@/main/services/config.service";
@@ -15,29 +14,31 @@ import { reboot } from "electron-shutdown-command";
 import { getAllInstalledSoftware } from "fetch-installed-software";
 import psList from "ps-list";
 import { USER_PREFERENCE_KEYS } from "@/shared/enums/userPreferenceKeys";
+import { Logger, LoggerBinding } from "@/main/logger";
 
 @injectable({
   scope: BindingScope.SINGLETON,
 })
 export class SystemService {
+  private prerequisitesDownloaded = false;
+
   constructor(
     @service(ConfigService) private configService: ConfigService,
     @service(ErrorService) private errorService: ErrorService,
+    @inject(LoggerBinding) private logger: Logger,
     private listProcesses = psList
   ) {}
-
-  private static getInstallerFile() {
-    return path.normalize(`${app.getPath("userData")}/vc_redist.x64.exe`);
-  }
-
-  private prerequisitesDownloaded = false;
 
   static getLocalAppData() {
     return path.resolve(`${process.env.APPDATA}/../local`);
   }
 
+  private static getInstallerFile() {
+    return path.normalize(`${app.getPath("userData")}/vc_redist.x64.exe`);
+  }
+
   reboot() {
-    logger.debug("Rebooting system");
+    this.logger.debug("Rebooting system");
     reboot();
   }
 
@@ -46,7 +47,7 @@ export class SystemService {
       path.parse(log.transports?.file.getFile().path).dir
     );
     if (error) {
-      logger.error(error);
+      this.logger.error(error);
     }
   }
 
@@ -59,7 +60,7 @@ export class SystemService {
     if (fs.existsSync(logPath)) {
       const error = await shell.openPath(logPath);
       if (error) {
-        logger.error(error);
+        this.logger.error(error);
       }
     } else {
       await this.errorService.handleError(
@@ -70,13 +71,13 @@ export class SystemService {
   }
 
   async clearApplicationLogs() {
-    logger.transports?.file.getFile().clear();
+    this.logger.transports?.file.getFile().clear();
     /*
     Due to the fact that the renderer proc has little to no node func / lib access,
     the renderer logs have to be manually cleared here.
     Because even if the entire logging object is exposed to the renderer it is unable to clear the file.
     */
-    const path = logger.transports?.file.getFile().path.split("\\") || [];
+    const path = this.logger.transports?.file.getFile().path.split("\\") || [];
     // replace main.log with renderer.log
     path.pop();
     path.push("renderer.log");
@@ -89,14 +90,14 @@ export class SystemService {
   }
 
   async checkPrerequisitesInstalled() {
-    logger.debug("Checking prerequisites are installed");
+    this.logger.debug("Checking prerequisites are installed");
 
     if (
       this.configService.getPreference(
         USER_PREFERENCE_KEYS.CHECK_PREREQUISITES
       ) === false
     ) {
-      logger.debug("Skip checking prerequisites due to user setting");
+      this.logger.debug("Skip checking prerequisites due to user setting");
       return true;
     }
 
@@ -106,7 +107,7 @@ export class SystemService {
       .map((x) => x.DisplayName);
 
     if (installedSoftware.length === 0) {
-      logger.debug(`${productTester} not detected`);
+      this.logger.debug(`${productTester} not detected`);
       return false;
     }
 
@@ -117,22 +118,22 @@ export class SystemService {
     );
 
     const sortedVersions = [...new Set(installedVersions.sort())];
-    logger.debug(`Installed ${productTester} versions ${sortedVersions}`);
+    this.logger.debug(`Installed ${productTester} versions ${sortedVersions}`);
 
     return installedVersions.filter((x) => Number(x) >= 2019).length > 0;
   }
 
   async installPrerequisites() {
     await this.downloadPrerequisites();
-    logger.debug("Downloads completed");
-    logger.debug(`Installing ${SystemService.getInstallerFile()}`);
+    this.logger.debug("Downloads completed");
+    this.logger.debug(`Installing ${SystemService.getInstallerFile()}`);
     return promisify(childProcess.exec)(
       `"${SystemService.getInstallerFile()}"`
     );
   }
 
   async downloadPrerequisites() {
-    logger.debug("Downloading prerequisites");
+    this.logger.debug("Downloading prerequisites");
     await this.downloadFile(
       "https://aka.ms/vs/17/release/vc_redist.x64.exe",
       SystemService.getInstallerFile()
@@ -143,19 +144,19 @@ export class SystemService {
 
   async downloadFile(url: string, output: string) {
     if (fs.existsSync(output)) {
-      logger.debug("Download already exists, skipping");
+      this.logger.debug("Download already exists, skipping");
       return;
     }
 
-    logger.debug(`Downloading from ${url} to ${output}`);
+    this.logger.debug(`Downloading from ${url} to ${output}`);
 
     const body = (await fetch(url)).body;
     if (body) {
-      logger.debug(`Download complete, writing to ${output}`);
+      this.logger.debug(`Download complete, writing to ${output}`);
       await pipeline(body, createWriteStream(output));
-      logger.debug(`Finished writing to ${output}`);
+      this.logger.debug(`Finished writing to ${output}`);
     } else {
-      logger.error(`Failed to download file from ${url}`);
+      this.logger.error(`Failed to download file from ${url}`);
     }
   }
 

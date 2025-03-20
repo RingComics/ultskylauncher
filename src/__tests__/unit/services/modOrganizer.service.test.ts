@@ -16,6 +16,7 @@ import { ProfileService } from "@/main/services/profile.service";
 import { SystemService } from "@/main/services/system.service";
 import { GraphicsService } from "@/main/services/graphics.service";
 import mockFs from "mock-fs";
+import { mockLogger } from "@/__tests__/unit/support/mocks/logger.mock";
 
 describe("ModOrganizer service", () => {
   let mockEnbService: StubbedInstanceWithSinonAccessor<EnbService>;
@@ -57,7 +58,8 @@ describe("ModOrganizer service", () => {
       mockGameService,
       mockProfileService,
       mockSystemService,
-      mockGraphicsService
+      mockGraphicsService,
+      mockLogger()
     );
 
     expect(await modOrganizerService.isRunning()).to.eql(true);
@@ -87,7 +89,8 @@ describe("ModOrganizer service", () => {
       mockGameService,
       mockProfileService,
       mockSystemService,
-      mockGraphicsService
+      mockGraphicsService,
+      mockLogger()
     );
 
     expect(await modOrganizerService.getFirstCustomExecutableTitle()).to.eql(

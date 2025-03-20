@@ -8,6 +8,7 @@ import {
   sinon,
   StubbedInstanceWithSinonAccessor,
 } from "@loopback/testlab";
+import { mockLogger } from "@/__tests__/unit/support/mocks/logger.mock";
 
 const mockLocalAppData = "mock/local/app/data";
 
@@ -75,13 +76,14 @@ describe("Wabbajack service", () => {
 
     wabbajackService = new WabbajackService(
       mockSystemService,
-      mockModpackService
+      mockModpackService,
+      mockLogger()
     );
   });
 
   afterEach(() => {
-    mockFs.restore();
     sinon.restore();
+    mockFs.restore();
   });
 
   it("should combine modlist info from wabbajack v2 and v3", async () => {

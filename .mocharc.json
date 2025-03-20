@@ -3,8 +3,5 @@
   "require": [
     "source-map-support/register",
     "tsconfig-paths/register"
-  ],
-  "file": [
-    "./dist/__tests__/unit/setup/global-setup.js"
   ]
 }

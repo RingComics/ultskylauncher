@@ -1,17 +1,20 @@
 import { StartupService } from "@/main/services/startup.service";
 import { Constructor } from "@loopback/context";
 import { WindowService } from "@/main/services/window.service";
-import { logger } from "@/main/logger";
+import { LoggerBinding } from "@/main/logger";
 import { BootMixin } from "@loopback/boot";
 import { Application } from "@loopback/core";
 import { Controller } from "@/main/decorators/controller.decorator";
 import { ErrorService } from "@/main/services/error.service";
+import logger from "electron-log";
 
 const serviceNamespace = "services";
 
 export class LauncherApplication extends BootMixin(Application) {
   constructor() {
     super();
+
+    this.bindLogger();
 
     this.projectRoot = __dirname;
 
@@ -53,5 +56,9 @@ export class LauncherApplication extends BootMixin(Application) {
     const renderService = await this.getServiceByClass(WindowService);
     await renderService.createBrowserWindow();
     await renderService.load("/");
+  }
+
+  private bindLogger() {
+    this.bind(LoggerBinding).to(logger.create("launcher"));
   }
 }

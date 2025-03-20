@@ -4,8 +4,7 @@ import {
 } from "@/additional-instructions";
 import modpackAdditionalInstructions from "@/additional-instructions.json";
 import fs from "fs";
-import { BindingScope, injectable } from "@loopback/context";
-import { logger } from "@/main/logger";
+import { BindingScope, inject, injectable } from "@loopback/context";
 import { service } from "@loopback/core";
 import { ConfigService } from "@/main/services/config.service";
 import { ProfileService } from "@/main/services/profile.service";
@@ -13,6 +12,7 @@ import * as readline from "readline";
 import * as os from "os";
 import { PathLike } from "fs-extra";
 import { WabbajackService } from "@/main/services/wabbajack.service";
+import { Logger, LoggerBinding } from "@/main/logger";
 
 @injectable({
   scope: BindingScope.SINGLETON,
@@ -21,8 +21,18 @@ export class InstructionService {
   constructor(
     @service(ConfigService) private configService: ConfigService,
     @service(ProfileService) private profileService: ProfileService,
-    @service(WabbajackService) private wabbajackService: WabbajackService
+    @service(WabbajackService) private wabbajackService: WabbajackService,
+    @inject(LoggerBinding) private logger: Logger
   ) {}
+
+  private static checkTargetMatches(
+    instruction: PluginOrModInstruction,
+    target: string
+  ) {
+    return typeof instruction.target === "string"
+      ? instruction.target === target
+      : instruction.target.includes(target);
+  }
 
   getInstructions(): AdditionalInstructions {
     return modpackAdditionalInstructions as AdditionalInstructions;
@@ -32,7 +42,7 @@ export class InstructionService {
     const modpackVersion = await this.wabbajackService.getModpackVersion();
 
     for (const instruction of instructions) {
-      logger.debug(
+      this.logger.debug(
         `Handling instruction ${JSON.stringify(
           instruction
         )} for modpack version ${modpackVersion}`
@@ -110,20 +120,20 @@ export class InstructionService {
     plugin: string,
     state: "enable" | "disable"
   ): Promise<void> {
-    logger.info(`Toggling plugin ${plugin} to state ${state}`);
+    this.logger.info(`Toggling plugin ${plugin} to state ${state}`);
 
     for (const pluginsFile of await this.getPluginFiles()) {
-      logger.debug(`Toggling plugin in ${pluginsFile}`);
+      this.logger.debug(`Toggling plugin in ${pluginsFile}`);
       const plugins = this.getPluginsFromFile(pluginsFile);
 
       const editedFile = [];
       for await (let currentPlugin of plugins) {
         if (currentPlugin.replace("*", "") === plugin) {
           if (state === "disable" && currentPlugin.startsWith("*")) {
-            logger.debug(`Disabling plugin ${plugin}`);
+            this.logger.debug(`Disabling plugin ${plugin}`);
             currentPlugin = currentPlugin.replace("*", "");
           } else if (state === "enable" && !currentPlugin.startsWith("*")) {
-            logger.debug(`Enabling plugin ${plugin}`);
+            this.logger.debug(`Enabling plugin ${plugin}`);
             currentPlugin = `*${currentPlugin}`;
           }
         }
@@ -145,10 +155,10 @@ export class InstructionService {
    * Disabled mods have a - symbol, like this: -Wildlander FULL
    */
   async toggleMod(mod: string, state: "enable" | "disable"): Promise<void> {
-    logger.info(`Toggling mod ${mod} to state ${state}`);
+    this.logger.info(`Toggling mod ${mod} to state ${state}`);
 
     for (const modlistFile of await this.getModlistFiles()) {
-      logger.debug(`Toggling mod in ${modlistFile}`);
+      this.logger.debug(`Toggling mod in ${modlistFile}`);
       const mods = this.getModsFromFile(modlistFile);
 
       const editedFile = [];
@@ -158,10 +168,10 @@ export class InstructionService {
           currentMod.replace("-", "") === mod
         ) {
           if (state === "disable" && currentMod.startsWith("+")) {
-            logger.debug(`Disabling mod ${mod}`);
+            this.logger.debug(`Disabling mod ${mod}`);
             currentMod = currentMod.replace("+", "-");
           } else if (state === "enable" && currentMod.startsWith("-")) {
-            logger.debug(`Enabling mod ${mod}`);
+            this.logger.debug(`Enabling mod ${mod}`);
             currentMod = currentMod.replace("-", "+");
           }
         }
@@ -203,14 +213,5 @@ export class InstructionService {
       ({ name }) =>
         `${this.profileService.profileDirectory()}/${name}/plugins.txt`
     );
-  }
-
-  private static checkTargetMatches(
-    instruction: PluginOrModInstruction,
-    target: string
-  ) {
-    return typeof instruction.target === "string"
-      ? instruction.target === target
-      : instruction.target.includes(target);
   }
 }

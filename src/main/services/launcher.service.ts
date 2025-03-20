@@ -6,13 +6,13 @@ import { EnbService } from "@/main/services/enb.service";
 import { ConfigService } from "@/main/services/config.service";
 import { ResolutionService } from "@/main/services/resolution.service";
 import { ModpackService } from "@/main/services/modpack.service";
-import { BindingScope, injectable } from "@loopback/context";
+import { BindingScope, inject, injectable } from "@loopback/context";
 import { app } from "electron";
-import { logger } from "@/main/logger";
 import { ErrorService } from "@/main/services/error.service";
 import { WindowService } from "@/main/services/window.service";
 import { GraphicsService } from "@/main/services/graphics.service";
 import { MigrationService } from "@/main/services/migration.service";
+import { Logger, LoggerBinding } from "@/main/logger";
 
 @injectable({
   scope: BindingScope.SINGLETON,
@@ -29,11 +29,12 @@ export class LauncherService {
     @service(ErrorService) private errorService: ErrorService,
     @service(WindowService) private windowService: WindowService,
     @service(GraphicsService) private graphicsService: GraphicsService,
-    @service(MigrationService) private migrationService: MigrationService
+    @service(MigrationService) private migrationService: MigrationService,
+    @inject(LoggerBinding) private logger: Logger
   ) {}
 
   async refreshModpack() {
-    logger.debug("Refreshing modpack");
+    this.logger.debug("Refreshing modpack");
     return this.setModpack(this.modpackService.getModpackDirectory());
   }
 
@@ -71,7 +72,7 @@ export class LauncherService {
   }
 
   async validateConfig() {
-    logger.debug("Validating config...");
+    this.logger.debug("Validating config...");
     await this.configService.setDefaultPreferences({
       [USER_PREFERENCE_KEYS.ENB_PROFILE]: {
         value: await this.enbService.getDefaultPreference(),
@@ -96,7 +97,7 @@ export class LauncherService {
           ),
       },
     });
-    logger.debug("Config validated");
+    this.logger.debug("Config validated");
   }
 
   async backupAssets() {

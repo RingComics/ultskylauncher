@@ -2,14 +2,16 @@ import { app, protocol } from "electron";
 import { isDevelopment } from "./main/services/config.service";
 import { autoUpdater } from "electron-updater";
 import { LauncherApplication } from "@/main/application";
-import { logger } from "@/main/logger";
 import { ErrorService } from "@/main/services/error.service";
 import { WindowService } from "@/main/services/window.service";
+import { newLogInstance } from "@/main/logger";
 
 const isSingleInstance = app.requestSingleInstanceLock();
 if (!isSingleInstance) {
   app.quit();
 }
+
+const logger = newLogInstance("Startup logger");
 
 // Ensure it's easy to tell where the logs for this application start
 const initialLog = `|             ${new Date().toLocaleString()}             |`;
@@ -59,7 +61,7 @@ app.on("ready", async () => {
   try {
     await start();
   } catch (error) {
-    const errorService = new ErrorService();
+    const errorService = new ErrorService(logger);
     await errorService.handleError(
       "Failed to start application",
       (error as Error).message

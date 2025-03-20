@@ -1,5 +1,4 @@
-import { BindingScope, injectable } from "@loopback/context";
-import { logger } from "@/main/logger";
+import { BindingScope, inject, injectable } from "@loopback/context";
 import { service } from "@loopback/core";
 import { app } from "electron";
 import { ConfigService } from "@/main/services/config.service";
@@ -12,6 +11,7 @@ import { UpdateService } from "@/main/services/update.service";
 import { BlacklistService } from "@/main/services/blacklist.service";
 import { ErrorService } from "@/main/services/error.service";
 import { WindowService } from "@/main/services/window.service";
+import { Logger, LoggerBinding } from "@/main/logger";
 
 interface StartupCommand {
   // Only needed if the command is being filtered
@@ -37,7 +37,8 @@ export class StartupService {
     @service(UpdateService) private updateService: UpdateService,
     @service(BlacklistService) private blacklistService: BlacklistService,
     @service(ErrorService) private errorService: ErrorService,
-    @service(WindowService) private windowService: WindowService
+    @service(WindowService) private windowService: WindowService,
+    @inject(LoggerBinding) private logger: Logger
   ) {}
 
   public registerStartupCommands(filter?: string) {
@@ -45,7 +46,7 @@ export class StartupService {
       {
         name: "Startup logs",
         execute: async () => {
-          logger.debug(`
+          this.logger.debug(`
             --- Startup debug logs ---
             OS: ${type()} ${platform()} ${version()}
             Modpack version: ${await this.wabbajackService.getModpackVersion()}
@@ -69,7 +70,7 @@ export class StartupService {
             await this.blacklistService.blacklistedProcessesRunning();
           if (runningBlacklistedProcesses.length > 0) {
             // Throw an error and don't continue until the process has been closed
-            logger.debug(
+            this.logger.debug(
               `Blacklisted process running ${JSON.stringify(
                 runningBlacklistedProcesses
               )}`
@@ -90,7 +91,7 @@ export class StartupService {
         execute: () => {
           if (!this.modpackService.checkCurrentModpackPathIsValid()) {
             const modpackDirectory = this.modpackService.getModpackDirectory();
-            logger.error(
+            this.logger.error(
               `Current selected modpack (${modpackDirectory}) is invalid. Removing so the user can select a valid one.`
             );
             this.modpackService.deleteModpackDirectory();
@@ -118,9 +119,9 @@ export class StartupService {
         (command.requiresModpack && this.modpackService.isModpackSet()) ||
         !command.requiresModpack
       ) {
-        logger.debug(`Running startup command: ${command.name}`);
+        this.logger.debug(`Running startup command: ${command.name}`);
         await command.execute();
-        logger.debug(`Command "${command.name}" completed`);
+        this.logger.debug(`Command "${command.name}" completed`);
       }
     }
   }

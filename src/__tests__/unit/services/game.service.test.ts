@@ -7,6 +7,7 @@ import {
 import { GameService } from "@/main/services/game.service";
 import { ConfigService } from "@/main/services/config.service";
 import fs from "fs";
+import { mockLogger } from "@/__tests__/unit/support/mocks/logger.mock";
 
 describe("GameService", () => {
   let mockConfigService: StubbedInstanceWithSinonAccessor<ConfigService>;
@@ -16,7 +17,7 @@ describe("GameService", () => {
 
   beforeEach(() => {
     mockConfigService = createStubInstance(ConfigService);
-    gameService = new GameService(mockConfigService);
+    gameService = new GameService(mockConfigService, mockLogger());
 
     logPath = "mock/log/path";
   });
