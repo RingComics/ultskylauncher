@@ -1,23 +1,40 @@
 <template>
-  <div v-if="!failedToGetNews && news.length > 0" class="c-news l-column">
+  <div
+    v-if="!failedToGetNews && news.length > 0"
+    class="c-news l-column"
+    data-testid="news-container"
+  >
     <TransitionGroup name="c-news__group">
-      <div v-for="newsItem in news" :key="newsItem.url" class="c-news__item">
+      <div
+        v-for="newsItem in news"
+        :key="newsItem.url"
+        class="c-news__item"
+        :data-testid="`news-item-${newsItem.title}`"
+      >
         <BaseLink
           :href="`https://www.patreon.com${newsItem.url}`"
           class="l-row"
+          data-testid="news-link"
         >
-          <div class="c-news__published l-center-vertically">
+          <div
+            class="c-news__published l-center-vertically"
+            data-testid="news-date"
+          >
             {{ new Date(newsItem.published).toLocaleDateString() }}
           </div>
 
-          <div class="c-news__title">
+          <div class="c-news__title" data-testid="news-title">
             {{ newsItem.title }}
           </div>
         </BaseLink>
       </div>
     </TransitionGroup>
   </div>
-  <div v-if="failedToGetNews && news.length === 0" class="l-flex l-center">
+  <div
+    v-if="failedToGetNews && news.length === 0"
+    class="l-flex l-center"
+    data-testid="news-error"
+  >
     Unable to load latest news.
   </div>
 </template>
@@ -25,7 +42,7 @@
 <script lang="ts">
 import { Options as Component, Vue } from "vue-class-component";
 import BaseList from "./BaseList.vue";
-import { Post, PostsService } from "@/renderer/services/posts.service";
+import type { Post, PostsService } from "@/renderer/services/posts.service";
 import {
   injectStrict,
   SERVICE_BINDINGS,
@@ -43,7 +60,7 @@ export default class News extends Vue {
   news: Post[] = [];
   failedToGetNews = false;
 
-  async created() {
+  override async created() {
     this.newsService = injectStrict(SERVICE_BINDINGS.NEWS_SERVICE);
     try {
       this.news = await this.newsService.getPosts(this.updateNews);

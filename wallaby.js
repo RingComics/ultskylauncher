@@ -4,10 +4,10 @@ module.exports = function (w) {
       "src/**/*.ts",
       "src/**/*.js",
       "src/**/*.json",
-      "!src/__tests__/unit/**/*.ts",
+      "!src/__tests__/**/*.test.ts",
       "tsconfig.json",
     ],
-    tests: ["src/__tests__/unit/**/*.ts"],
+    tests: ["src/__tests__/unit/**/*.test.ts"],
 
     testFramework: "mocha",
 
@@ -21,21 +21,23 @@ module.exports = function (w) {
       type: "node",
     },
 
-    setup: function () {
+    setup: function (wallaby) {
+      // Ensure MockFs has fully reset before starting
+      require("mock-fs").restore();
+
       // Enable TypeScript aliases
       if (global._tsconfigPathsRegistered) return;
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const tsConfigPaths = require("tsconfig-paths");
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const tsconfig = require("./tsconfig.json");
       tsConfigPaths.register({
         baseUrl: tsconfig.compilerOptions.baseUrl,
-        paths: tsconfig.compilerOptions.paths,
+        paths: {
+          "@/*": ["./src/*", "./src/types/*"],
+        },
       });
       global._tsconfigPathsRegistered = true;
 
-      // Ensure MockFs has fully reset before starting
-      require("mock-fs").restore();
+      require(wallaby.projectCacheDir + "/src/__tests__/unit/helpers/setup");
     },
   };
 };

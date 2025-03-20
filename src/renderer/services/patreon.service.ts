@@ -1,4 +1,5 @@
-import { CacheService } from "@/renderer/services/cache.service";
+import type { CacheService } from "@/renderer/services/cache.service";
+import { logger } from "@/main/logger";
 
 export class PatreonService {
   private patrons: Patron[] = [];
@@ -9,15 +10,21 @@ export class PatreonService {
     this.cacheService = cacheService;
   }
 
-  /**
-   * Taken from https://stackoverflow.com/a/12646864/3379536
-   */
-  private static shuffleArray(array: Patron[]) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
+  private static shufflePatrons(patrons: Patron[]): Patron[] {
+    const shuffledArray = [...patrons]; // Create a copy of the original array
+
+    for (let i = shuffledArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1)); // Generate a random index
+      [shuffledArray[i], shuffledArray[j]] = [
+        // Disable this eslint rule here because the arrays are intentionally being swapped
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        shuffledArray[j]!,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        shuffledArray[i]!,
+      ]; // Swap elements
     }
-    return array;
+
+    return shuffledArray;
   }
 
   public async getPatrons(shuffle = true): Promise<Patron[]> {
@@ -36,11 +43,12 @@ export class PatreonService {
         return this.patrons;
       }
 
+      logger.log("Getting Patrons from API");
       const response = await fetch("https://ultsky.phinocio.com/api/patreon");
       const data = (await response.json()) as { patrons: Patron[] };
       // Shuffle the array to show different Patrons each time
       this.patrons = shuffle
-        ? PatreonService.shuffleArray(data.patrons)
+        ? PatreonService.shufflePatrons(data.patrons)
         : data.patrons;
       this.cacheService.set(this.cacheKey, this.patrons);
       return this.patrons;

@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "outDir": "../../dist/__tests__",
+    "resolveJsonModule": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["./**/*.{ts,json}", "../shared/types/*.ts"],
+  "references": [
+    {
+      "path": "../shared"
+    },
+    {
+      "path": "../main"
+    }
+  ]
+}

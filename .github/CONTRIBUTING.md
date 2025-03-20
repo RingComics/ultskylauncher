@@ -2,17 +2,46 @@
 
 ## Install dependencies
 
+_Note: currently only supports Node 16 and requires python 2.7_
+
+### Install python
+
+Install pyenv and then 
+
+```shell
+pyenv install 2.7.18
+```
+
+```shell
+export PATH="${HOME}/.pyenv/shims:${PATH}"
+```
+
 ```
 npm install
 ```
 
 ## Running
 
+_Note_  
+The application must be run against a valid modpack.  
+If you do not have a valid modpack, a "dummy" modpack can be generated.
+
+```shell
+npm run generate:modpack-files
+```
+
 Start the application
 ```
 npm run start
 //or for automatic reloading of the main process with nodemon
 npm run start:dev
+```
+
+If you have generated a modpack you might need to point the application to the right APP_DATA.  
+This can be set with an environment variable
+
+```shell
+APPDATA="$(pwd)/mock-files/local" npm run start
 ```
 
 ## Building 

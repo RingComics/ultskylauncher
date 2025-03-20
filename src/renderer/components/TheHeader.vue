@@ -8,18 +8,34 @@
 
     <div class="c-header__links l-row l-no-flex-grow">
       <div v-if="modpack.website" class="c-header__link l-center-vertically">
-        <BaseLink :href="modpack.website" :hover-style="true"
+        <BaseLink
+          :href="modpack.website"
+          :hover-style="true"
+          data-testid="website-link"
           >Website
         </BaseLink>
       </div>
       <div v-if="modpack.wiki" class="c-header__link l-center-vertically">
-        <BaseLink :href="modpack.wiki" :hover-style="true">Wiki</BaseLink>
+        <BaseLink
+          :href="modpack.wiki"
+          :hover-style="true"
+          data-testid="wiki-link"
+          >Wiki</BaseLink
+        >
       </div>
       <div v-if="modpack.roadmap" class="c-header__link l-center-vertically">
-        <BaseLink :href="modpack.roadmap" :hover-style="true">Roadmap</BaseLink>
+        <BaseLink
+          :href="modpack.roadmap"
+          :hover-style="true"
+          data-testid="roadmap-link"
+          >Roadmap</BaseLink
+        >
       </div>
       <div v-if="modpack.wiki" class="c-header__link l-center-vertically">
-        <BaseLink :href="modpack.patreon" :hover-style="true"
+        <BaseLink
+          :href="modpack.patreon"
+          :hover-style="true"
+          data-testid="patreon-link"
           >Patreon
         </BaseLink>
       </div>
@@ -29,8 +45,8 @@
 
 <script lang="ts">
 import { Options, Vue } from "vue-class-component";
-import { Modpack } from "@/modpack-metadata";
-import modpack from "@/modpack.json";
+import type { Modpack } from "@/shared/types/modpack-metadata";
+import modpack from "@/shared/wildlander/modpack.json";
 import BaseLink from "@/renderer/components/BaseLink.vue";
 import BaseImage from "@/renderer/components/BaseImage.vue";
 
@@ -38,9 +54,9 @@ import BaseImage from "@/renderer/components/BaseImage.vue";
   components: { BaseLink, BaseImage },
 })
 export default class TheHeader extends Vue {
-  private modpack!: Modpack;
+  modpack!: Modpack;
 
-  created() {
+  override created() {
     this.modpack = modpack;
   }
 }

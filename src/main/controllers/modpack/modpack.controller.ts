@@ -3,16 +3,17 @@ import {
   IsModpackValidResponse,
   MODPACK_EVENTS,
 } from "@/main/controllers/modpack/mopack.events";
-import { service } from "@loopback/core";
+import { inject, service } from "@loopback/core";
 import { ModpackService } from "@/main/services/modpack.service";
-import { logger } from "@/main/logger";
 import { LauncherService } from "@/main/services/launcher.service";
+import { Logger, LoggerBinding } from "@/main/logger";
 
 @controller
 export class ModpackController {
   constructor(
     @service(ModpackService) private modpackService: ModpackService,
-    @service(LauncherService) private launcherService: LauncherService
+    @service(LauncherService) private launcherService: LauncherService,
+    @inject(LoggerBinding) private logger: Logger
   ) {}
 
   @handle(MODPACK_EVENTS.IS_MODPACK_SET)
@@ -23,7 +24,7 @@ export class ModpackController {
   @handle(MODPACK_EVENTS.IS_MODPACK_DIRECTORY_VALID)
   isValidModDirectory(filepath: string): IsModpackValidResponse {
     if (!filepath) {
-      logger.warn("No filepath specified when checking mod directory");
+      this.logger.warn("No filepath specified when checking mod directory");
       return { ok: false };
     }
     return this.modpackService.checkModpackPathIsValid(filepath);
@@ -32,7 +33,7 @@ export class ModpackController {
   @handle(MODPACK_EVENTS.SET_MODPACK)
   setModpack(filepath: string) {
     if (!filepath) {
-      logger.error("No filepath specified when setting mod directory");
+      this.logger.error("No filepath specified when setting mod directory");
     }
     return this.launcherService.setModpack(filepath);
   }
