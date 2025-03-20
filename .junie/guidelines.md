@@ -1,39 +1,40 @@
 # Junie Guidelines
 
-## Test Validation
+## Test Validation Process
 
-When generating code with Junie, the following validation steps must be followed:
+When generating code with Junie, follow these validation steps to ensure quality and compatibility:
 
-1. After code generation, automatically run the unit tests and e2e tests using:
+1. After code generation is complete, automatically validate your code by running both unit tests and end-to-end tests:
    ```bash
    npm run test:unit
    ```
    ```bash
    npm run test:e2e
    ```
-   
-2. If any tests fail, Junie should:
-   - Analyze the test failures
-   - Modify the generated code to fix the issues
-   - Run the tests again but only the failing one (unit or e2e) (if more debug information is needed then `DEBUG=true` can preface the e2e tests for more information)
-   - Proceed to run the other test suite to ensure both have passed with the latest changes
-   - Remove any output files that are used for the tests and junie specifically (like `output.txt`)
 
-3. Continue this process until all tests pass successfully.
+2. If any tests fail, take these corrective actions:
+   - Carefully analyze the test failure messages to identify the root causes
+   - Make targeted modifications to the generated code to address the specific issues
+   - Re-run only the failing test suite (unit or e2e) to verify your fixes
+     - For more detailed debugging information with e2e tests, use: `DEBUG=true npm run test:e2e`
+   - Once the failing tests pass, run the other test suite to ensure complete validation
+   - Clean up by removing any temporary files created during testing (such as `output.txt` or other Junie-specific outputs)
 
-## Test Command Details
+3. Repeat this test-fix-validate cycle until all tests pass successfully.
 
-The test command runs:
-- Unit tests using Mocha
-- End-to-end tests using Playwright
+## Test Framework Information
 
-Ensure that both types of tests pass before considering the code generation complete.
+The testing infrastructure consists of:
+- Unit tests: Implemented with Mocha framework to test individual components
+- End-to-end tests: Implemented with Playwright to test complete user workflows
 
-## Importance
+Both test suites must pass successfully before considering the code generation process complete.
 
-Running and passing tests is critical to ensure that:
-- The generated code maintains compatibility with the existing codebase
-- All functionality works as expected
-- No regressions are introduced
+## Why Testing Matters
 
-Always prioritize test validation before finalizing any code changes.
+Thorough test validation is essential because it:
+- Ensures your generated code integrates seamlessly with the existing codebase
+- Verifies that all functionality works correctly across different scenarios
+- Prevents the introduction of regressions or new bugs
+
+Always prioritize test validation before finalizing any code changes to maintain the integrity and reliability of the application.
