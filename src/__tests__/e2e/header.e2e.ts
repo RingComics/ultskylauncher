@@ -1,4 +1,4 @@
-import { Page, test, expect } from "@playwright/test";
+import { expect, Page, test } from "@playwright/test";
 import { startTestApp, StartTestAppReturn } from "./util/setup";
 
 test.describe("Header", () => {

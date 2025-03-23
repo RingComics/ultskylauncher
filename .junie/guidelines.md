@@ -1,17 +1,25 @@
 # Junie Guidelines
 
+## Code style
+
+- Always prioritise clean well readable maintainable code.
+- Use TypeScript strict settings based on the project configuration
+- Only suggest upgrading libraries when absolutely necessary
+
 ## Test Validation Process
+
+The tests consist of e2e tests and unit tests. These are defined as tasks in the IDE.
 
 When generating code with Junie, follow these validation steps to ensure quality and compatibility:
 
-1. After code generation is complete, automatically validate your code by running both unit tests and end-to-end tests:
+1. After code generation is complete, automatically validate your code by running both unit and e2e tasks in the IDE `test:unit` and `test:e2e`
+   If the tasks are not defined, just use the npm commands:
    ```bash
    npm run test:unit
    ```
    ```bash
    npm run test:e2e
    ```
-   These commands are also defined in the IDE itself so they can be used directly from the IDE.
 
 2. If any tests fail, take these corrective actions:
    - Carefully analyze the test failure messages to identify the root causes
@@ -22,21 +30,10 @@ When generating code with Junie, follow these validation steps to ensure quality
 
 3. Repeat this test-fix-validate cycle until all tests pass successfully.
 
-4. Clean up by removing any temporary files created by junie (such as `output.txt` or other Junie-specific outputs)
+## Code generation
 
-## Test Framework Information
+- Always remove any output or script files used purely by junie, including any from previous steps.
 
-The testing infrastructure consists of:
-- Unit tests: Implemented with Mocha framework to test individual components
-- End-to-end tests: Implemented with Playwright to test complete user workflows
+## E2E tests
 
-Both test suites must pass successfully before considering the code generation process complete.
-
-## Why Testing Matters
-
-Thorough test validation is essential because it:
-- Ensures your generated code integrates seamlessly with the existing codebase
-- Verifies that all functionality works correctly across different scenarios
-- Prevents the introduction of regressions or new bugs
-
-Always prioritize test validation before finalizing any code changes to maintain the integrity and reliability of the application.
+- Always use data-testids and `window.getByTestId` when selecting elements

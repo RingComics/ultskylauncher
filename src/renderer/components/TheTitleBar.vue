@@ -1,10 +1,14 @@
 <template>
   <div class="c-title-bar l-row l-end" :class="{ 'l-no-flex-grow': !grow }">
     <div class="c-title-bar__navigation-bar"></div>
-    <div class="c-title-bar__control" @click="minimize">
+    <div
+      class="c-title-bar__control"
+      data-testid="minimize-button"
+      @click="minimize"
+    >
       <span class="material-icons c-title-bar__control-icon"> remove </span>
     </div>
-    <div class="c-title-bar__control" @click="close">
+    <div class="c-title-bar__control" data-testid="close-button" @click="close">
       <span class="material-icons c-title-bar__control-icon"> close </span>
     </div>
   </div>
