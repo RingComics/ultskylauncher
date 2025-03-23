@@ -11,6 +11,7 @@ When generating code with Junie, follow these validation steps to ensure quality
    ```bash
    npm run test:e2e
    ```
+   These commands are also defined in the IDE itself so they can be used directly from the IDE.
 
 2. If any tests fail, take these corrective actions:
    - Carefully analyze the test failure messages to identify the root causes
@@ -18,9 +19,10 @@ When generating code with Junie, follow these validation steps to ensure quality
    - Re-run only the failing test suite (unit or e2e) to verify your fixes
      - For more detailed debugging information with e2e tests, use: `DEBUG=true npm run test:e2e`
    - Once the failing tests pass, run the other test suite to ensure complete validation
-   - Clean up by removing any temporary files created during testing (such as `output.txt` or other Junie-specific outputs)
 
 3. Repeat this test-fix-validate cycle until all tests pass successfully.
+
+4. Clean up by removing any temporary files created by junie (such as `output.txt` or other Junie-specific outputs)
 
 ## Test Framework Information
 

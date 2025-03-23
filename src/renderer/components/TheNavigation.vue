@@ -63,13 +63,16 @@
         </router-link>
       </div>
 
-      <div class="c-navigation__launcher-info">
-        <p class="u-text">Modpack version: {{ modpackVersion }}</p>
+      <div class="c-navigation__launcher-info" data-testid="launcher-info">
+        <p class="u-text" data-testid="modpack-version">
+          Modpack version: {{ modpackVersion }}
+        </p>
         <LauncherVersion :version="launcherVersion" />
         <p class="u-text">
           <BaseLink
             href="https://github.com/Wildlander-mod/Launcher"
             :underline="true"
+            data-testid="contribute-link"
             >Help contribute
           </BaseLink>
         </p>
