@@ -20,7 +20,7 @@
     </div>
 
     <div class="c-navigation__content l-column l-space-between">
-      <div class="l-column">
+      <div class="l-column" data-testid="navigation-container">
         <router-link
           v-slot="{ href, navigate, isActive }"
           :to="{

@@ -25,7 +25,10 @@ test.describe("Community", () => {
     await resetWindow(window, mockFiles);
 
     // Navigate to the Community page after reset
-    await window.getByText("Community").click();
+    await window
+      .getByTestId("navigation-container")
+      .getByText("Community")
+      .click();
   });
 
   test.afterAll(async () => {
