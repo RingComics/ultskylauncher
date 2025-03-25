@@ -1,15 +1,15 @@
 import { expect, test } from "@playwright/test";
-import { startTestApp } from "./util/setup";
+import { resetWindow, startTestApp } from "./util/setup";
 
 test.describe("Application Actions", () => {
   test("Minimize the app", async () => {
     // Start a fresh app for this test
-    const { electronApp, closeTestApp, window } = await startTestApp(test, {
-      setModpack: true,
-      waitForPreload: true,
-    });
+    const { electronApp, closeTestApp, window, mockFiles } = await startTestApp(
+      test
+    );
 
-    // Find the minimize button by its data-testid
+    await resetWindow(window, mockFiles);
+
     const minimizeButton = window.getByTestId("minimize-button");
     await minimizeButton.waitFor({ state: "visible" });
 
@@ -32,12 +32,10 @@ test.describe("Application Actions", () => {
 
   test("Close the app", async () => {
     // Start a fresh app for this test
-    const { electronApp, window } = await startTestApp(test, {
-      setModpack: true,
-      waitForPreload: true,
-    });
+    const { electronApp, window, mockFiles } = await startTestApp(test);
 
-    // Find the close button by its data-testid
+    await resetWindow(window, mockFiles);
+
     const closeButton = window.getByTestId("close-button");
     await closeButton.waitFor({ state: "visible" });
 

@@ -1,5 +1,5 @@
 import { Page, test, expect } from "@playwright/test";
-import { startTestApp, StartTestAppReturn } from "./util/setup";
+import { startTestApp, StartTestAppReturn, resetWindow } from "./util/setup";
 import path from "path";
 import fs from "fs/promises";
 
@@ -9,14 +9,15 @@ test.describe("Navigation", () => {
   let mockFiles: string;
 
   test.beforeAll(async () => {
-    ({ window, closeTestApp, mockFiles } = await startTestApp(test, {
-      setModpack: true,
-      waitForPreload: true,
-    }));
+    ({ window, closeTestApp, mockFiles } = await startTestApp(test));
   });
 
   test.afterAll(async () => {
     await closeTestApp();
+  });
+
+  test.beforeEach(async () => {
+    await resetWindow(window, mockFiles);
   });
 
   test("Should display the correct modpack version", async () => {

@@ -1,9 +1,10 @@
 import { Page, test, expect } from "@playwright/test";
-import { startTestApp, StartTestAppReturn } from "./util/setup";
+import { startTestApp, StartTestAppReturn, resetWindow } from "./util/setup";
 
 test.describe("News", () => {
   let window: Page;
   let closeTestApp: StartTestAppReturn["closeTestApp"];
+  let mockFiles: string;
 
   // Mock data for tests
   const mockPosts = [
@@ -32,13 +33,13 @@ test.describe("News", () => {
   };
 
   test.beforeAll(async () => {
-    ({ window, closeTestApp } = await startTestApp(test, {
-      setModpack: true,
-      waitForPreload: true,
-    }));
+    ({ window, closeTestApp, mockFiles } = await startTestApp(test));
   });
 
   test.beforeEach(async () => {
+    // Reset the test context
+    await resetWindow(window, mockFiles);
+
     // Mock the API responses
     await window.route("**/api/patreon", (route) => {
       return route.fulfill({

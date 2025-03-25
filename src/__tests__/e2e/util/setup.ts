@@ -29,10 +29,7 @@ const UUID = (): string => {
  * - wabbajack install settings
  * - mock modpack install
  */
-export const createMockFiles = async (
-  test: typeof Test,
-  setModpack: boolean
-) => {
+export const createMockFiles = async (test: typeof Test) => {
   // Create an area for the Electron app to store config/files.
   const mockFiles = `${config().paths.mockFiles}/${
     test.info().titlePath[1]
@@ -45,23 +42,10 @@ export const createMockFiles = async (
     `${mockFiles}/local`
   );
 
-  if (setModpack) {
-    await fs.mkdir(`${mockFiles}/config`, { recursive: true });
-    await fs.writeFile(
-      `${mockFiles}/config/userPreferences.json`,
-      JSON.stringify({
-        MOD_DIRECTORY: `${mockModpackInstall}`,
-      })
-    );
-  }
-
   return mockFiles;
 };
 
-export interface StartTestAppOptions {
-  setModpack?: boolean;
-  waitForPreload?: boolean;
-}
+export interface StartTestAppOptions {}
 
 export interface StartTestAppReturn {
   mockFiles: string;
@@ -74,8 +58,7 @@ export const startTestApp = async (
   test: typeof Test,
   options: StartTestAppOptions = {}
 ): Promise<StartTestAppReturn> => {
-  const { setModpack = false, waitForPreload = false } = options;
-  const mockFiles = await createMockFiles(test, setModpack);
+  const mockFiles = await createMockFiles(test);
 
   // Launch Electron app.
   const electronApp = await electron.launch({
@@ -99,12 +82,6 @@ export const startTestApp = async (
   if (process.env["DEBUG"]) {
     // Direct Electron Renderer console to Node terminal.
     window.on("console", console.log);
-  }
-
-  // If waitForPreload is true, wait for the "launch-game" button to be visible.
-  // The navigation only becomes visible once all preload checks have completed (e.g. auto update, setting modpack, etc.)
-  if (waitForPreload) {
-    await window.getByTestId("launch-game").waitFor({ state: "visible" });
   }
 
   const closeTestApp = async () => {
@@ -152,4 +129,42 @@ export const screenshot = async (
     path: `${config().paths.screenshots}/${test.name}/${name}.png`,
     fullPage: true,
   });
+};
+
+export const waitForAppLoaded = async (window: Page): Promise<void> => {
+  await window.getByTestId("launch-game").waitFor({ state: "visible" });
+};
+
+/**
+ * Reset the window by:
+ * 1. Resetting user preferences
+ * 2. Setting the modpack
+ * 3. Reloading the window
+ * 4. Waiting for the launch button to be visible (this is only visible when the app has finished loading)
+ *
+ * This function should be called in the beforeEach hook of every e2e test
+ * to ensure that the context for each test is fully reset.
+ */
+export const resetWindow = async (
+  window: Page,
+  mockFiles: string
+): Promise<void> => {
+  // Reset user preferences and set the modpack
+  const mockModpackInstall = `${mockFiles}/mock-modpack-install`;
+  await fs.mkdir(`${mockFiles}/config`, { recursive: true });
+  await fs.writeFile(
+    `${mockFiles}/config/userPreferences.json`,
+    JSON.stringify({
+      MOD_DIRECTORY: `${mockModpackInstall}`,
+    })
+  );
+
+  // Wait for the app to load past the initial update window before reloading
+  await waitForAppLoaded(window);
+
+  // Reload the window reload to reset the context (useful between tests)
+  await window.reload();
+
+  // Wait for the app to load again after the refresh
+  await waitForAppLoaded(window);
 };

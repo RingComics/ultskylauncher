@@ -1,9 +1,10 @@
 import { Page, test, expect } from "@playwright/test";
-import { startTestApp, StartTestAppReturn } from "./util/setup";
+import { startTestApp, StartTestAppReturn, resetWindow } from "./util/setup";
 
 test.describe("Community", () => {
   let window: Page;
   let closeTestApp: StartTestAppReturn["closeTestApp"];
+  let mockFiles: string;
 
   // Define test data for better organization and maintainability
   const links = [
@@ -17,12 +18,13 @@ test.describe("Community", () => {
   ];
 
   test.beforeAll(async () => {
-    ({ window, closeTestApp } = await startTestApp(test, {
-      setModpack: true,
-      waitForPreload: true,
-    }));
+    ({ window, closeTestApp, mockFiles } = await startTestApp(test));
+  });
 
-    // Navigate to the Community page
+  test.beforeEach(async () => {
+    await resetWindow(window, mockFiles);
+
+    // Navigate to the Community page after reset
     await window.getByText("Community").click();
   });
 

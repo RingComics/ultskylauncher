@@ -1,9 +1,10 @@
 import { expect, Page, test } from "@playwright/test";
-import { startTestApp, StartTestAppReturn } from "./util/setup";
+import { startTestApp, StartTestAppReturn, resetWindow } from "./util/setup";
 
 test.describe("Header", () => {
   let window: Page;
   let closeTestApp: StartTestAppReturn["closeTestApp"];
+  let mockFiles: string;
 
   // Define test data for better organization and maintainability
   const links = [
@@ -14,14 +15,15 @@ test.describe("Header", () => {
   ];
 
   test.beforeAll(async () => {
-    ({ window, closeTestApp } = await startTestApp(test, {
-      setModpack: true,
-      waitForPreload: true,
-    }));
+    ({ window, closeTestApp, mockFiles } = await startTestApp(test));
   });
 
   test.afterAll(async () => {
     await closeTestApp();
+  });
+
+  test.beforeEach(async () => {
+    await resetWindow(window, mockFiles);
   });
 
   // Use test.each to reduce repetition
