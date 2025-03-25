@@ -67,6 +67,8 @@ export const startTestApp = async (
       CONFIG_PATH: `${mockFiles}/config`,
       APPDATA: `${mockFiles}/APPDATA`,
       MULTIPLE_INSTANCE: "true",
+      // Disable this to open dev tools by default
+      IS_TEST: "true",
     },
     // recordVideo: { dir: "test-results" },
   });
@@ -83,6 +85,21 @@ export const startTestApp = async (
     // Direct Electron Renderer console to Node terminal.
     window.on("console", console.log);
   }
+
+  // Move the window slightly in a random direction by 150 pixels for e2e tests,
+  // this allows all windows to be visible when using multiple workers
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  await electronApp.evaluate(({ BrowserWindow }) => {
+    const offset = 200;
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win) {
+      const [x, y] = win.getPosition();
+      // Generate random direction: up, down, left, right, or diagonal
+      const randomX = Math.random() > 0.5 ? offset : -offset;
+      const randomY = Math.random() > 0.5 ? offset : -offset;
+      win.setPosition(x + randomX, y + randomY);
+    }
+  });
 
   const closeTestApp = async () => {
     await saveCoverage(

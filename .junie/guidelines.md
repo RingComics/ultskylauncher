@@ -15,14 +15,7 @@ The tests consist of e2e tests and unit tests. These are defined as tasks in the
 
 When generating code with Junie, follow these validation steps to ensure quality and compatibility:
 
-1. After code generation is complete, automatically validate your code by running both unit and e2e tasks in the IDE `test:unit` and `test:e2e`
-   If the tasks are not defined, just use the npm commands:
-   ```bash
-   npm run test:unit
-   ```
-   ```bash
-   npm run test:e2e
-   ```
+1. After code generation is complete, automatically validate your code by running both unit and e2e tasks in the IDE 
 
 2. If any tests fail, take these corrective actions:
    - Carefully analyze the test failure messages to identify the root causes
@@ -36,6 +29,16 @@ When generating code with Junie, follow these validation steps to ensure quality
 If writing tests that are due to cover all paths, the coverage information that comes from e2e and units tests can be used to discovered untested lines.
 If these lines were expected to be covered by the action under test, add further more specific tests to cover these lines.
 
+## Commands
+
+- Lint - `npm run lint`
+- Fix lint issues - `npm run lint:fix`
+- All tests - `npm run test`
+- Unit tests - `npm run test:unit`
+- E2E tests - `npm run test:e2e`
+
+If any of these commands exist in the IDE, run them directly from the IDE.
+
 ## Test style
 
 - Focus on clear concise tests that test functionality and not specifically implementation
@@ -46,6 +49,7 @@ If these lines were expected to be covered by the action under test, add further
 - Always remove any output or script files used purely by junie, including any from previous steps.
 - When iterating on changes, ensure that old unused implementations are removed
 - When renaming files, remove the old unused one
+- After each generation, run the lint command to confirm there are no errors or warnings. If there are, fix them before continuing.
 
 ## E2E tests
 
