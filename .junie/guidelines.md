@@ -1,58 +1,64 @@
 # Junie Guidelines
 
-## Code style
+This document provides guidelines for working with Junie AI, divided into generic best practices and project-specific instructions.
 
-- Always prioritise clean well readable maintainable code.
-- Use TypeScript strict settings based on the project configuration
-- Only suggest upgrading libraries when absolutely necessary
-- Do not use `any` as a TypeScript type
-- Always declare variables at the lower scope possible to prevent polluting the outer scope unless strictly necessary
-- Prefer `const` over `let` where possible
+# Generic Guidelines
 
-## Test Validation Process
+## Code Quality Principles
 
-The tests consist of e2e tests and unit tests. These are defined as tasks in the IDE.
+- Always prioritize clean, readable, and maintainable code when working with Junie AI
+- Prefer `const` over `let` where possible to ensure immutability
+- Always declare variables at the lowest scope possible to prevent polluting the outer scope
+- Only suggest upgrading libraries when absolutely necessary for functionality
 
-When generating code with Junie, follow these validation steps to ensure quality and compatibility:
+## TypeScript Best Practices
 
-1. After code generation is complete, automatically validate your code by running both unit and e2e tasks in the IDE 
+- Adhere to TypeScript strict settings as configured in the project
+- Avoid using `any` type to maintain type safety and code quality
 
-2. If any tests fail, take these corrective actions:
-   - Carefully analyze the test failure messages to identify the root causes
-   - Make targeted modifications to the generated code to address the specific issues
-   - Re-run only the failing test suite (unit or e2e) to verify your fixes
-     - For more detailed debugging information with e2e tests, use: `DEBUG=true npm run test:e2e`
-   - Once the failing tests pass, run the other test suite to ensure complete validation
+## Code Generation with Junie
 
-3. Repeat this test-fix-validate cycle until all tests pass successfully.
+- Remove any output or script files used solely by Junie, including those from previous steps
+- When iterating on changes, ensure old unused implementations are properly removed
+- When renaming files, remove the old unused versions to maintain a clean codebase
+- After each code generation, validate your code with the appropriate linting tools
 
-If writing tests that are due to cover all paths, the coverage information that comes from e2e and units tests can be used to discovered untested lines.
-If these lines were expected to be covered by the action under test, add further more specific tests to cover these lines.
+## Testing Principles
 
-## Commands
+- Focus on clear, concise tests that verify functionality rather than implementation details
+- Design each test to be specific with a single, focused assertion when possible
+
+## Validation Workflow
+
+- After generating code with Junie, always validate your changes by running appropriate tests
+- When tests fail:
+  - Analyze failure messages carefully to identify root causes
+  - Make targeted modifications to address specific issues
+  - Re-run failing tests to verify your fixes
+  - Once fixed, run all tests to ensure complete validation
+- Repeat the test-fix-validate cycle until all tests pass successfully
+
+# Project-Specific Guidelines
+
+## Test Environment
+
+- The project uses both e2e tests and unit tests, defined as tasks in the IDE
+- For detailed debugging with e2e tests, use: `DEBUG=true npm run test:e2e`
+- Test coverage information from e2e and unit tests helps identify untested code paths
+- When expected code paths aren't covered, add specific tests to improve coverage
+
+## Project Commands
 
 - Lint - `npm run lint`
 - Fix lint issues - `npm run lint:fix`
 - All tests - `npm run test`
 - Unit tests - `npm run test:unit`
 - E2E tests - `npm run test:e2e`
+- Always run these commands directly from the IDE when available
 
-If any of these commands exist in the IDE, run them directly from the IDE.
+## E2E Testing Standards
 
-## Test style
-
-- Focus on clear concise tests that test functionality and not specifically implementation
-- Each test should be specific and attempt to contain only a single specific assertion
-
-## Code generation
-
-- Always remove any output or script files used purely by junie, including any from previous steps.
-- When iterating on changes, ensure that old unused implementations are removed
-- When renaming files, remove the old unused one
-- After each generation, run the lint command to confirm there are no errors or warnings. If there are, fix them before continuing.
-
-## E2E tests
-
-- Always use data-testids and `window.getByTestId` when selecting elements unless the test is specifically testing a user action like clicking some text, then it is okay to use that text explicitly.
-- If a data-testid does not exist and is needed, add it to the relevant file.
-- Tests are written with playwright. A configuration is defined in the IDE to run all tests. 
+- Tests are implemented with Playwright, configured in the IDE
+- Always use data-testids and `window.getByTestId` when selecting elements
+- Exception: When testing user actions like clicking text, you may use that text explicitly
+- If a needed data-testid doesn't exist, add it to the relevant file
