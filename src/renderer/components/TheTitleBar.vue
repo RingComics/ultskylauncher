@@ -1,10 +1,14 @@
 <template>
   <div class="c-title-bar l-row l-end" :class="{ 'l-no-flex-grow': !grow }">
     <div class="c-title-bar__navigation-bar"></div>
-    <div class="c-title-bar__control" @click="minimize">
+    <div
+      class="c-title-bar__control"
+      data-testid="minimize-button"
+      @click="minimize"
+    >
       <span class="material-icons c-title-bar__control-icon"> remove </span>
     </div>
-    <div class="c-title-bar__control" @click="close">
+    <div class="c-title-bar__control" data-testid="close-button" @click="close">
       <span class="material-icons c-title-bar__control-icon"> close </span>
     </div>
   </div>
@@ -13,7 +17,7 @@
 <script lang="ts">
 import { Vue } from "vue-class-component";
 import { Prop } from "vue-property-decorator";
-import { WindowEvents } from "@/main/controllers/window/window.events";
+import { WINDOW_EVENTS } from "@/main/controllers/window/window.events";
 import {
   injectStrict,
   SERVICE_BINDINGS,
@@ -22,14 +26,14 @@ import {
 export default class TheTitleBar extends Vue {
   private ipcService = injectStrict(SERVICE_BINDINGS.IPC_SERVICE);
 
-  @Prop({ default: false }) private grow!: boolean;
+  @Prop({ default: false }) grow!: boolean;
 
   async close() {
-    await this.ipcService.invoke(WindowEvents.CLOSE);
+    await this.ipcService.invoke(WINDOW_EVENTS.CLOSE);
   }
 
   async minimize() {
-    await this.ipcService.invoke(WindowEvents.MINIMIZE);
+    await this.ipcService.invoke(WINDOW_EVENTS.MINIMIZE);
   }
 }
 </script>

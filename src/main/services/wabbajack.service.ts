@@ -1,14 +1,14 @@
 import fs from "fs";
-import {
+import type {
   WabbajackInstallSettings,
   WabbajackModpackMetadata,
   WabbajackV2SettingsFile,
-} from "@/wabbajack";
-import { logger } from "@/main/logger";
+} from "@/shared/types/wabbajack";
 import { SystemService } from "@/main/services/system.service";
 import { service } from "@loopback/core";
-import { BindingScope, injectable } from "@loopback/context";
+import { BindingScope, inject, injectable } from "@loopback/context";
 import { ModpackService } from "@/main/services/modpack.service";
+import { Logger, LoggerBinding } from "@/main/logger";
 
 @injectable({
   scope: BindingScope.SINGLETON,
@@ -21,8 +21,8 @@ export class WabbajackService {
   private wabbajackV3InstalledModpacksPath = `${SystemService.getLocalAppData()}/Wabbajack/saved_settings`;
 
   constructor(
-    @service(SystemService) private systemService: SystemService,
-    @service(ModpackService) private modpackService: ModpackService
+    @service(ModpackService) private modpackService: ModpackService,
+    @inject(LoggerBinding) private logger: Logger
   ) {}
 
   async getInstalledModpacks(): Promise<WabbajackModpackMetadata | null> {
@@ -31,13 +31,17 @@ export class WabbajackService {
     if (fs.existsSync(this.wabbajackV2InstalledModpacksPath)) {
       v2Modpacks = await this.getInstalledModpacksFromWabbajackV2();
     } else {
-      logger.warn(`${this.wabbajackV2InstalledModpacksPath} does not exist.`);
+      this.logger.warn(
+        `Wabbajack V2 ${this.wabbajackV2InstalledModpacksPath} does not exist.`
+      );
     }
 
     if (fs.existsSync(this.wabbajackV3InstalledModpacksPath)) {
       v3Modpacks = await this.getInstalledModpacksFromWabbajackV3();
     } else {
-      logger.warn(`${this.wabbajackV3InstalledModpacksPath} does not exist.`);
+      this.logger.warn(
+        `Wabbajack V3 ${this.wabbajackV3InstalledModpacksPath}/ does not exist.`
+      );
     }
 
     const combined = {
@@ -57,10 +61,10 @@ export class WabbajackService {
       .reduce(
         (accumulator, current) => ({
           ...accumulator,
-          [modpackMeta[current].InstallationPath]: {
-            title: modpackMeta[current].ModList.Name,
-            installPath: modpackMeta[current].InstallationPath,
-            version: modpackMeta[current].ModList.Version,
+          [modpackMeta[current]!.InstallationPath]: {
+            title: modpackMeta[current]!.ModList.Name,
+            installPath: modpackMeta[current]!.InstallationPath,
+            version: modpackMeta[current]!.ModList.Version,
           },
         }),
         {}
@@ -91,8 +95,7 @@ export class WabbajackService {
         // This means a later install might appear before a previous one,
         // we need to find the latest install and remove the others
         if (
-          currentInAccumulator &&
-          currentInAccumulator.lastUpdated &&
+          currentInAccumulator?.lastUpdated &&
           currentInAccumulator.lastUpdated > current.lastUpdated
         ) {
           return accumulator;
@@ -101,9 +104,9 @@ export class WabbajackService {
         return {
           ...accumulator,
           [current.contents.InstallLocation]: {
-            title: current.contents.Metadata?.title,
+            title: current.contents.Metadata?.title ?? null,
             installPath: current.contents.InstallLocation,
-            version: current.contents.Metadata?.version,
+            version: current.contents.Metadata?.version ?? null,
             lastUpdated: current.lastUpdated,
           },
         };
@@ -119,19 +122,19 @@ export class WabbajackService {
       modpacks !== null
         ? Object.keys(modpacks).filter(
             (modpack) =>
-              modpack !== "$type" && modpacks[modpack].title === modpackName
+              modpack !== "$type" && modpacks[modpack]?.title === modpackName
           )
         : [];
-    logger.info(
+    this.logger.info(
       `Discovered ${wildlanderModpacks.length} ${modpackName} modpack installations in ${this.installedModpacksFilename}`
     );
-    logger.debug(wildlanderModpacks);
+    this.logger.debug(wildlanderModpacks);
     return wildlanderModpacks;
   }
 
   async getModpackMetadata(path: string) {
     const modpacks = await this.getInstalledModpacks();
-    return modpacks && modpacks[path] ? modpacks[path] : null;
+    return modpacks?.[path] ? modpacks[path] : null;
   }
 
   async getCurrentModpackMetadata() {

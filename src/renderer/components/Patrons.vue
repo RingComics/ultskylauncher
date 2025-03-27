@@ -1,9 +1,10 @@
 <template>
-  <div class="c-patrons">
+  <div class="c-patrons" data-testid="patrons-container">
     <BaseList
       v-if="!failedToGetPatrons && superPatrons.length !== 0"
       :items="superPatrons"
       class="c-patrons__list"
+      data-testid="super-patrons-list"
     >
       <div class="c-patrons__title">
         <div class="l-column l-center-text">
@@ -23,6 +24,7 @@
     <BaseList
       v-if="!failedToGetPatrons && otherPatrons.length !== 0"
       :items="otherPatrons"
+      data-testid="patrons-list"
     >
       <div class="c-patrons__title">
         <div class="c-patrons__star">
@@ -31,14 +33,16 @@
         <div class="c-patrons__title-text">Patrons</div>
       </div>
     </BaseList>
-    <div v-if="failedToGetPatrons">Unable to retrieve Patron list.</div>
+    <div v-if="failedToGetPatrons" data-testid="patrons-error">
+      Unable to retrieve Patron list.
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { Options as Component, Vue } from "vue-class-component";
 import BaseList from "./BaseList.vue";
-import { PatreonService } from "@/renderer/services/patreon.service";
+import type { PatreonService } from "@/renderer/services/patreon.service";
 import {
   injectStrict,
   SERVICE_BINDINGS,
@@ -57,7 +61,7 @@ export default class Patrons extends Vue {
   otherPatrons: string[] = [];
   failedToGetPatrons = false;
 
-  async created() {
+  override async created() {
     this.patreonService = injectStrict(SERVICE_BINDINGS.PATRON_SERVICE);
 
     try {

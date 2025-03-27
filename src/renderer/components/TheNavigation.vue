@@ -1,8 +1,13 @@
 <template>
   <nav class="c-navigation">
     <div class="c-navigation__actions">
-      <BaseButton type="primary" size="grow" @click="launchGame"
-        >Launch Game
+      <BaseButton
+        type="primary"
+        size="grow"
+        data-testid="launch-game"
+        @click="launchGame"
+      >
+        Launch Game
       </BaseButton>
 
       <ProfileSelection />
@@ -15,13 +20,13 @@
     </div>
 
     <div class="c-navigation__content l-column l-space-between">
-      <div class="l-column">
+      <div class="l-column" data-testid="navigation-container">
         <router-link
+          v-slot="{ href, navigate, isActive }"
           :to="{
             name: 'Home',
           }"
           custom
-          v-slot="{ href, navigate, isActive }"
         >
           <NavigationItem :active="isActive" :href="href" @click="navigate">
             Home
@@ -29,11 +34,11 @@
         </router-link>
 
         <router-link
+          v-slot="{ href, navigate, isActive }"
           :to="{
             name: 'Community',
           }"
           custom
-          v-slot="{ href, navigate, isActive }"
         >
           <NavigationItem :active="isActive" :href="href" @click="navigate">
             Community
@@ -41,25 +46,33 @@
         </router-link>
 
         <router-link
+          v-slot="{ href, navigate, isActive }"
           :to="{
             name: 'Advanced',
           }"
           custom
-          v-slot="{ href, navigate, isActive }"
         >
-          <NavigationItem :active="isActive" :href="href" @click="navigate">
+          <NavigationItem
+            :active="isActive"
+            :href="href"
+            data-testId="navigation-advanced"
+            @click="navigate"
+          >
             Advanced
           </NavigationItem>
         </router-link>
       </div>
 
-      <div class="c-navigation__launcher-info">
-        <p class="u-text">Modpack version: {{ modpackVersion }}</p>
+      <div class="c-navigation__launcher-info" data-testid="launcher-info">
+        <p class="u-text" data-testid="modpack-version">
+          Modpack version: {{ modpackVersion }}
+        </p>
         <LauncherVersion :version="launcherVersion" />
         <p class="u-text">
           <BaseLink
             href="https://github.com/Wildlander-mod/Launcher"
             :underline="true"
+            data-testid="contribute-link"
             >Help contribute
           </BaseLink>
         </p>
@@ -98,7 +111,7 @@
       </div>
     </div>
 
-    <template v-slot:action>
+    <template #action>
       <BaseButton type="primary" @click="reboot">Reboot</BaseButton>
     </template>
   </AppModal>
@@ -124,7 +137,7 @@ import { SYSTEM_EVENTS } from "@/main/controllers/system/system.events";
 import { LAUNCHER_EVENTS } from "@/main/controllers/launcher/launcher.events";
 import { DIALOG_EVENTS } from "@/main/controllers/dialog/dialog.events";
 import { MODPACK_EVENTS } from "@/main/controllers/modpack/mopack.events";
-import { Modpack } from "@/modpack-metadata";
+import type { Modpack } from "@/shared/types/modpack-metadata";
 import Popper from "vue3-popper";
 import LauncherVersion from "@/renderer/components/LauncherVersion.vue";
 import GraphicsSelection from "@/renderer/components/GraphicsSelection.vue";
@@ -146,15 +159,15 @@ import GraphicsSelection from "@/renderer/components/GraphicsSelection.vue";
 export default class TheNavigation extends Vue {
   private ipcService = injectStrict(SERVICE_BINDINGS.IPC_SERVICE);
 
-  private gameRunning = false;
-  private checkingPrerequisites = false;
-  private installingPrerequisites = false;
-  private rebootRequired = false;
-  private launcherVersion: string | null = null;
-  private modpackVersion: string | null = null;
-  private modpackName: string | null = null;
+  gameRunning = false;
+  checkingPrerequisites = false;
+  installingPrerequisites = false;
+  rebootRequired = false;
+  launcherVersion: string | null = null;
+  modpackVersion: string | null = null;
+  modpackName: string | null = null;
 
-  async created() {
+  override async created() {
     this.modpackVersion = await this.ipcService.invoke(
       WABBAJACK_EVENTS.GET_MODPACK_VERSION
     );

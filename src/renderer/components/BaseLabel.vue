@@ -1,5 +1,9 @@
 <template>
-  <label class="c-label" :class="{ 'c-label--centered': centered }">
+  <label
+    class="c-label"
+    :class="{ 'c-label--centered': centered }"
+    data-testid="input-label"
+  >
     {{ label }}
   </label>
 </template>
@@ -10,8 +14,8 @@ import { Prop } from "vue-property-decorator";
 
 @Options({})
 export default class BaseLabel extends Vue {
-  @Prop() private centered!: boolean;
-  @Prop() private label!: string;
+  @Prop() centered!: boolean;
+  @Prop() label!: string;
 }
 </script>
 

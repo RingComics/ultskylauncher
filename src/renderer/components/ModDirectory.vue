@@ -1,12 +1,15 @@
 <template>
-  <BaseLabel :label="label" />
-  <AppDropdownFileSelect
-    :options="modpacks"
-    :current-selection="modDirectory"
-    default-text="Select mod directory..."
-    v-if="modpacks"
-    @file-selected="modDirectorySet"
-  />
+  <div data-testid="mod-directory" class="l-column">
+    <BaseLabel :label="label" />
+    <AppDropdownFileSelect
+      v-if="modpacks"
+      data-testid="mod-directory-select"
+      :options="modpacks"
+      :current-selection="modDirectory"
+      default-text="Select mod directory..."
+      @file-selected="modDirectorySet"
+    />
+  </div>
 </template>
 
 <script lang="ts">
@@ -15,13 +18,13 @@ import {
   injectStrict,
   SERVICE_BINDINGS,
 } from "@/renderer/services/service-container";
-import { SelectOption } from "@/renderer/components/BaseDropdown.vue";
+import type { SelectOption } from "@/renderer/components/BaseDropdown.vue";
 import BaseLabel from "@/renderer/components/BaseLabel.vue";
-import modpack from "@/modpack.json";
+import modpack from "@/shared/wildlander/modpack.json";
 import { MODPACK_EVENTS } from "@/main/controllers/modpack/mopack.events";
 import { Prop } from "vue-property-decorator";
 import { WABBAJACK_EVENTS } from "@/main/controllers/wabbajack/wabbajack.events";
-import { WindowEvents } from "@/main/controllers/window/window.events";
+import { WINDOW_EVENTS } from "@/main/controllers/window/window.events";
 import { ENABLE_LOADING_EVENT } from "@/renderer/services/event.service";
 import AppDropdownFileSelect from "@/renderer/components/AppDropdownFileSelect.vue";
 
@@ -29,17 +32,17 @@ import AppDropdownFileSelect from "@/renderer/components/AppDropdownFileSelect.v
   components: { AppDropdownFileSelect, BaseLabel },
 })
 export default class ModDirectory extends Vue {
-  private modDirectory!: SelectOption | null;
-  private modpacks: SelectOption[] | null = null;
+  modDirectory!: SelectOption | null;
+  modpacks: SelectOption[] | null = null;
   @Prop({ default: `${modpack.name} installation folder` })
-  private label!: string;
+  label!: string;
 
   private eventService = injectStrict(SERVICE_BINDINGS.EVENT_SERVICE);
   private messageService = injectStrict(SERVICE_BINDINGS.MESSAGE_SERVICE);
   private ipcService = injectStrict(SERVICE_BINDINGS.IPC_SERVICE);
   private modpackService = injectStrict(SERVICE_BINDINGS.MODPACK_SERVICE);
 
-  async created() {
+  override async created() {
     this.modDirectory = await this.getCurrentModDirectory();
 
     const installedModpacks = await this.getInstalledModpacks();
@@ -90,7 +93,7 @@ export default class ModDirectory extends Vue {
       this.eventService.emit(ENABLE_LOADING_EVENT);
       await this.ipcService.invoke(MODPACK_EVENTS.SET_MODPACK, filepath);
       this.modDirectory = { text: filepath, value: filepath };
-      await this.ipcService.invoke(WindowEvents.RELOAD);
+      await this.ipcService.invoke(WINDOW_EVENTS.RELOAD);
     }
   }
 

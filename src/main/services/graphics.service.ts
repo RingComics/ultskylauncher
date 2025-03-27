@@ -1,18 +1,20 @@
-import { FriendlyDirectoryMap } from "@/modpack-metadata";
 import fs from "fs";
 import { ConfigService } from "@/main/services/config.service";
 import { USER_PREFERENCE_KEYS } from "@/shared/enums/userPreferenceKeys";
 import { not as isNotJunk } from "junk";
-import { service } from "@loopback/core";
+import { inject, service } from "@loopback/core";
 import { ProfileService } from "@/main/services/profile.service";
 import path from "path";
-import { logger } from "@/main/logger";
 import { copy, existsSync } from "fs-extra";
+import { Logger, LoggerBinding } from "@/main/logger";
+import type { FriendlyDirectoryMap } from "@/shared/types/modpack-metadata";
+import { NoGraphicsError } from "@/shared/errors/no-graphics.error";
 
 export class GraphicsService {
   constructor(
     @service(ConfigService) private configService: ConfigService,
-    @service(ProfileService) private profileService: ProfileService
+    @service(ProfileService) private profileService: ProfileService,
+    @inject(LoggerBinding) private logger: Logger
   ) {}
 
   graphicsDirectory() {
@@ -27,10 +29,6 @@ export class GraphicsService {
     return `${this.configService.launcherDirectory()}/${this.graphicsMappingFile()}`;
   }
 
-  private graphicsBackupDirectory() {
-    return `${this.configService.backupDirectory()}/graphics`;
-  }
-
   async isInGraphicsList(graphics: string) {
     return (
       (await this.getGraphics()).filter(({ real }) => real === graphics)
@@ -43,46 +41,21 @@ export class GraphicsService {
   }
 
   async getDefaultPreference() {
-    return (await this.getGraphics())[0].real;
-  }
-
-  private async getMappedGraphics(): Promise<FriendlyDirectoryMap[]> {
-    return JSON.parse(
-      await fs.promises.readFile(`${this.graphicsMappingPath()}`, "utf-8")
-    );
-  }
-
-  private async getUnmappedGraphics(mappedGraphics: FriendlyDirectoryMap[]) {
     return (
-      (
-        await fs.promises.readdir(this.graphicsDirectory(), {
-          withFileTypes: true,
-        })
-      )
-        .filter((dirent) => dirent.isDirectory())
-        .map((dirent) => dirent.name)
-        .filter(isNotJunk)
-        .map(
-          (preset): FriendlyDirectoryMap => ({ real: preset, friendly: preset })
-        )
-        // Remove any graphics that have a mapping
-        .filter(
-          (unmappedSetting) =>
-            !mappedGraphics.find(
-              (mappedSetting: FriendlyDirectoryMap) =>
-                mappedSetting.real === unmappedSetting.real
-            )
-        )
+      (await this.getGraphics())?.[0]?.real ??
+      (() => {
+        throw new NoGraphicsError("No graphics found");
+      })()
     );
   }
 
   async syncGraphicsFromGameToPresets(graphicsPreset: string, profile: string) {
-    logger.info(
+    this.logger.info(
       `Syncing graphics changes back to presets for ${graphicsPreset}`
     );
 
     const graphicsFiles = await this.getGraphicsFilesForPreset(graphicsPreset);
-    logger.debug(
+    this.logger.debug(
       `Graphics files that need to be synced: ${JSON.stringify(graphicsFiles)}`
     );
 
@@ -90,12 +63,12 @@ export class GraphicsService {
       const fileWithPath = `${this.profileService.profileDirectory()}/${profile}/${file}`;
       const fileDestination = `${this.graphicsDirectory()}/${graphicsPreset}/${file}`;
       if (existsSync(fileWithPath)) {
-        logger.debug(`Copying ${fileWithPath} to ${fileDestination}`);
+        this.logger.debug(`Copying ${fileWithPath} to ${fileDestination}`);
         await copy(fileWithPath, fileDestination, { overwrite: true });
       }
     }
 
-    logger.info("Finished syncing graphics presets");
+    this.logger.info("Finished syncing graphics presets");
   }
 
   async getGraphics(): Promise<FriendlyDirectoryMap[]> {
@@ -115,7 +88,7 @@ export class GraphicsService {
   }
 
   async setGraphics(graphics: string) {
-    logger.info(`Setting graphics to ${graphics}`);
+    this.logger.info(`Setting graphics to ${graphics}`);
     this.setGraphicsPreference(graphics);
     await this.updateProfilesWithGraphics(graphics);
   }
@@ -125,7 +98,7 @@ export class GraphicsService {
   }
 
   async updateProfilesWithGraphics(preset: string) {
-    logger.debug("Updating profiles with graphics settings");
+    this.logger.debug("Updating profiles with graphics settings");
     const graphics = (await this.getGraphicsFilesForPreset(preset)).map(
       (file) => `${this.graphicsDirectory()}/${preset}/${file}`
     );
@@ -133,7 +106,7 @@ export class GraphicsService {
     return Promise.all(
       profiles.map((profile) =>
         graphics.map(async (file) => {
-          logger.debug(`Copying ${file} to ${profile}`);
+          this.logger.debug(`Copying ${file} to ${profile}`);
           await fs.promises.copyFile(file, `${profile}/${path.basename(file)}`);
         })
       )
@@ -146,10 +119,10 @@ export class GraphicsService {
 
   async backupOriginalGraphics() {
     const backupExists = existsSync(this.graphicsBackupDirectory());
-    logger.debug(`Backup for graphics exists: ${backupExists}`);
+    this.logger.debug(`Backup for graphics exists: ${backupExists}`);
 
     if (!backupExists) {
-      logger.info("No graphics backup exists. Backing up...");
+      this.logger.info("No graphics backup exists. Backing up...");
       await fs.promises.mkdir(this.configService.backupDirectory(), {
         recursive: true,
       });
@@ -168,14 +141,55 @@ export class GraphicsService {
   }
 
   async restoreGraphics() {
-    logger.info("Restoring graphics settings");
-    logger.debug(
+    this.logger.info("Restoring graphics settings");
+    this.logger.debug(
       `Copying ${this.graphicsBackupDirectory()} to ${this.graphicsDirectory()}`
     );
     await copy(this.graphicsBackupDirectory(), this.graphicsDirectory(), {
       overwrite: true,
     });
     await this.updateProfilesWithGraphics(this.getGraphicsPreference());
-    logger.info("Graphics restored");
+    this.logger.info("Graphics restored");
+  }
+
+  private graphicsBackupDirectory() {
+    return `${this.configService.backupDirectory()}/graphics`;
+  }
+
+  private async getMappedGraphics(): Promise<FriendlyDirectoryMap[]> {
+    return JSON.parse(
+      await fs.promises.readFile(`${this.graphicsMappingPath()}`, "utf-8")
+    );
+  }
+
+  private async getUnmappedGraphics(mappedGraphics: FriendlyDirectoryMap[]) {
+    if (fs.existsSync(this.graphicsDirectory())) {
+      return (
+        (
+          await fs.promises.readdir(this.graphicsDirectory(), {
+            withFileTypes: true,
+          })
+        )
+          .filter((dirent) => dirent.isDirectory())
+          .map((dirent) => dirent.name)
+          .filter(isNotJunk)
+          .map(
+            (preset): FriendlyDirectoryMap => ({
+              real: preset,
+              friendly: preset,
+            })
+          )
+          // Remove any graphics that have a mapping
+          .filter(
+            (unmappedSetting) =>
+              !mappedGraphics.find(
+                (mappedSetting: FriendlyDirectoryMap) =>
+                  mappedSetting.real === unmappedSetting.real
+              )
+          )
+      );
+    } else {
+      return [];
+    }
   }
 }

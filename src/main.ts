@@ -1,14 +1,18 @@
-import { app, protocol } from "electron";
-import { isDevelopment } from "./main/services/config.service";
+import { app, dialog, protocol } from "electron";
 import { autoUpdater } from "electron-updater";
-import { LauncherApplication } from "@/main/application";
-import { logger } from "@/main/logger";
-import { ErrorService } from "@/main/services/error.service";
-import { WindowService } from "@/main/services/window.service";
+import { LauncherApplication } from "./main/application";
+import { ErrorService } from "./main/services/error.service";
+import { WindowService } from "./main/services/window.service";
+import { newLogInstance } from "./main/logger";
 
-const isSingleInstance = app.requestSingleInstanceLock();
-if (!isSingleInstance) {
-  app.quit();
+const logger = newLogInstance("Startup logger");
+
+if (process.env["MULTIPLE_INSTANCE"] !== "true") {
+  const isSingleInstance = app.requestSingleInstanceLock();
+  if (!isSingleInstance) {
+    logger.debug("Secondary instance opened, quitting");
+    app.quit();
+  }
 }
 
 // Ensure it's easy to tell where the logs for this application start
@@ -24,7 +28,7 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 // Exit cleanly on request from parent process in development mode.
-if (isDevelopment) {
+if (!app.isPackaged) {
   if (process.platform === "win32") {
     process.on("message", (data) => {
       if (data === "graceful-exit") {
@@ -36,6 +40,14 @@ if (isDevelopment) {
       app.quit();
     });
   }
+
+  if (process.platform !== "win32") {
+    if (!process.env["APPDATA"]) {
+      // The application requires a valid modpack installation.
+      // If not working on Windows, this is assumed to be local files generated from `npm run generate:modpack-files` for development purposes.
+      process.env["APPDATA"] = `${__dirname}/../mock-files/APP_DATA`;
+    }
+  }
 }
 
 const start = async () => {
@@ -43,10 +55,9 @@ const start = async () => {
   await launcherApplication.boot();
   await launcherApplication.start();
 
-  app.on("second-instance", async () => {
-    const windowService = await launcherApplication.getServiceByClass(
-      WindowService
-    );
+  app.on("second-instance", () => {
+    const windowService =
+      launcherApplication.getServiceByClassSync(WindowService);
     // Someone tried to run a second instance, so focus the original window.
     windowService.focusWindow();
   });
@@ -55,17 +66,16 @@ const start = async () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on("ready", async () => {
-  try {
-    await start();
-  } catch (error) {
-    const errorService = new ErrorService();
-    await errorService.handleError(
-      "Failed to start application",
-      (error as Error).message
-    );
-    process.exit(1);
-  }
-
-  logger.debug("App started");
+// TODO this should probably use `app.whenReady().then(()` instead
+app.on("ready", () => {
+  start()
+    .then(() => logger.debug("App started"))
+    .catch((error) => {
+      const errorService = new ErrorService(logger, dialog);
+      errorService.handleError(
+        "Failed to start application",
+        (error as Error).message
+      );
+      process.exit(1);
+    });
 });

@@ -1,18 +1,17 @@
 import { USER_PREFERENCE_KEYS } from "@/shared/enums/userPreferenceKeys";
 import { service } from "@loopback/core";
-import { ModOrganizerService } from "@/main/services/modOrganizer.service";
 import { ProfileService } from "@/main/services/profile.service";
 import { EnbService } from "@/main/services/enb.service";
 import { ConfigService } from "@/main/services/config.service";
 import { ResolutionService } from "@/main/services/resolution.service";
 import { ModpackService } from "@/main/services/modpack.service";
-import { BindingScope, injectable } from "@loopback/context";
-import { app } from "electron";
-import { logger } from "@/main/logger";
+import { BindingScope, inject, injectable } from "@loopback/context";
 import { ErrorService } from "@/main/services/error.service";
 import { WindowService } from "@/main/services/window.service";
 import { GraphicsService } from "@/main/services/graphics.service";
 import { MigrationService } from "@/main/services/migration.service";
+import { Logger, LoggerBinding } from "@/main/logger";
+import { VersionBinding } from "@/main/bindings/version.binding";
 
 @injectable({
   scope: BindingScope.SINGLETON,
@@ -24,22 +23,22 @@ export class LauncherService {
     @service(ResolutionService) private resolutionService: ResolutionService,
     @service(ModpackService) private modpackService: ModpackService,
     @service(ProfileService) private profileService: ProfileService,
-    @service(ModOrganizerService)
-    private modOrganizerService: ModOrganizerService,
     @service(ErrorService) private errorService: ErrorService,
     @service(WindowService) private windowService: WindowService,
     @service(GraphicsService) private graphicsService: GraphicsService,
-    @service(MigrationService) private migrationService: MigrationService
+    @service(MigrationService) private migrationService: MigrationService,
+    @inject(LoggerBinding) private logger: Logger,
+    @inject(VersionBinding) private version: string
   ) {}
 
   async refreshModpack() {
-    logger.debug("Refreshing modpack");
+    this.logger.debug("Refreshing modpack");
     return this.setModpack(this.modpackService.getModpackDirectory());
   }
 
   async setModpack(filepath: string) {
     try {
-      await this.configService.setPreference(
+      this.configService.setPreference(
         USER_PREFERENCE_KEYS.MOD_DIRECTORY,
         filepath
       );
@@ -56,7 +55,7 @@ export class LauncherService {
       );
     } catch (error) {
       if (error instanceof Error && error.message.includes("EPERM")) {
-        await this.errorService.handleError(
+        this.errorService.handleError(
           "Permission error",
           `
           The launcher has been unable to create/modify some files due to a permissions error.
@@ -65,13 +64,13 @@ export class LauncherService {
         );
         this.windowService.quit();
       } else {
-        await this.errorService.handleUnknownError(error);
+        this.errorService.handleUnknownError(error);
       }
     }
   }
 
   async validateConfig() {
-    logger.debug("Validating config...");
+    this.logger.debug("Validating config...");
     await this.configService.setDefaultPreferences({
       [USER_PREFERENCE_KEYS.ENB_PROFILE]: {
         value: await this.enbService.getDefaultPreference(),
@@ -96,17 +95,17 @@ export class LauncherService {
           ),
       },
     });
-    logger.debug("Config validated");
+    this.logger.debug("Config validated");
   }
 
   async backupAssets() {
-    await this.enbService.backupOriginalENBs();
+    await this.enbService.backupOriginalEnbs();
     await this.profileService.backupOriginalProfiles();
     await this.graphicsService.backupOriginalGraphics();
   }
 
   getVersion() {
-    return app.getVersion();
+    return this.version;
   }
 
   setCheckPrerequisites(value: boolean) {

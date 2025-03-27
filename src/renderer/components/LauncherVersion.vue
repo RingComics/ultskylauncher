@@ -9,7 +9,7 @@
       <BaseLink
         href="https://github.com/Wildlander-mod/Launcher/releases/tag/v2.6.2"
       >
-        <p class="u-text">
+        <p class="u-text" data-testid="launcher-version">
           Launcher Version: {{ version }}
           <span class="material-icons c-launcher-version__warning">
             warning
@@ -20,7 +20,9 @@
   </template>
 
   <template v-else>
-    <p class="u-text">Launcher Version: {{ version }}</p>
+    <p class="u-text" data-testid="launcher-version">
+      Launcher Version: {{ version }}
+    </p>
   </template>
 </template>
 
@@ -37,7 +39,7 @@ import BaseLink from "@/renderer/components/BaseLink.vue";
   },
 })
 export default class LauncherVersion extends Vue {
-  @Prop() private version: string | null = null;
+  @Prop() version: string | null = null;
 }
 </script>
 

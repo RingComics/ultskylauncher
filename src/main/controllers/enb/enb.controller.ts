@@ -2,7 +2,7 @@ import { controller, handle } from "@/main/decorators/controller.decorator";
 import { ENB_EVENTS } from "@/main/controllers/enb/enb.events";
 import { EnbService } from "@/main/services/enb.service";
 import { service } from "@loopback/core";
-import { FriendlyDirectoryMap } from "@/modpack-metadata";
+import type { FriendlyDirectoryMap } from "@/shared/types/modpack-metadata";
 
 @controller
 export class EnbController {
@@ -10,17 +10,17 @@ export class EnbController {
 
   @handle(ENB_EVENTS.GET_ENB_PRESETS)
   getEnbPresets(): Promise<FriendlyDirectoryMap[]> {
-    return this.enbService.getENBPresets();
+    return this.enbService.getEnbPresets();
   }
 
   @handle(ENB_EVENTS.RESTORE_ENB_PRESETS)
   async restoreEnbPresets(): Promise<void> {
-    await this.enbService.restoreENBPresets();
+    await this.enbService.restoreEnbPresets();
   }
 
   @handle(ENB_EVENTS.GET_ENB_PREFERENCE)
   async getEnbPreference(): Promise<unknown> {
-    return await this.enbService.getEnbPreference();
+    return this.enbService.getEnbPreference();
   }
 
   @handle(ENB_EVENTS.SET_ENB_PREFERENCE)
