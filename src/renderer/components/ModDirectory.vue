@@ -1,13 +1,15 @@
 <template>
-  <BaseLabel :label="label" />
-  <AppDropdownFileSelect
-    v-if="modpacks"
-    data-testid="mod-directory-select"
-    :options="modpacks"
-    :current-selection="modDirectory"
-    default-text="Select mod directory..."
-    @file-selected="modDirectorySet"
-  />
+  <div data-testid="mod-directory" class="l-column">
+    <BaseLabel :label="label" />
+    <AppDropdownFileSelect
+      v-if="modpacks"
+      data-testid="mod-directory-select"
+      :options="modpacks"
+      :current-selection="modDirectory"
+      default-text="Select mod directory..."
+      @file-selected="modDirectorySet"
+    />
+  </div>
 </template>
 
 <script lang="ts">

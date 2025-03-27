@@ -1,5 +1,9 @@
 <template>
-  <label class="c-label" :class="{ 'c-label--centered': centered }">
+  <label
+    class="c-label"
+    :class="{ 'c-label--centered': centered }"
+    data-testid="input-label"
+  >
     {{ label }}
   </label>
 </template>

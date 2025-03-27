@@ -8,6 +8,7 @@ import fs from "fs/promises";
 import { _electron as electron, Page, test as Test } from "@playwright/test";
 import type { ElectronApplication } from "playwright";
 import { randomBytes } from "crypto";
+import { removeUserPreferences } from "./user-preferences";
 
 type WindowWithCoverage = Page & {
   // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -153,6 +154,57 @@ export const waitForAppLoaded = async (window: Page): Promise<void> => {
 };
 
 /**
+ * Waits for the preload to complete by checking if the current URL is the auto-update URL.
+ * If it is, waits until it changes before proceeding.
+ *
+ * This method is useful to ensure it's safe to reload the page, as reloading while
+ * the URL is the update URL can cause issues with the application loading process.
+ *
+ * @param window The Playwright page object
+ */
+export const waitForPreloadComplete = async (window: Page): Promise<void> => {
+  const autoUpdateUrl = "auto-update";
+  if (window.url().toString().includes(autoUpdateUrl)) {
+    await window.waitForURL((url) => !url.toString().includes(autoUpdateUrl));
+  }
+
+  // Wait until the page is ready before continuing
+  await window.waitForLoadState("load");
+};
+
+/**
+ * Resets the window for initial mod selection tests by:
+ * 1. Removing user preferences
+ * 2. Reloading the window
+ * 3. Waiting for the mod directory selection to be available
+ *
+ * This is different from the standard resetWindow function because
+ * we need to ensure the mod directory is not set before testing
+ * the initial mod selection screen.
+ *
+ * @param window The Playwright page object
+ * @param mockFiles The path to the mock files directory
+ */
+export const resetWindowWithoutModSelection = async (
+  window: Page,
+  mockFiles: string
+): Promise<void> => {
+  // Remove user preferences
+  await removeUserPreferences(mockFiles);
+
+  // Wait for preload to complete before reloading
+  await waitForPreloadComplete(window);
+
+  // Reload the window
+  await window.reload();
+
+  // Wait for the mod directory selection to be available
+  await window.getByTestId("mod-directory-select").waitFor({
+    state: "visible",
+  });
+};
+
+/**
  * Reset the window by:
  * 1. Resetting user preferences
  * 2. Setting the modpack
@@ -176,8 +228,8 @@ export const resetWindow = async (
     })
   );
 
-  // Wait for the app to load past the initial update window before reloading
-  await waitForAppLoaded(window);
+  // Wait for preload to complete before reloading
+  await waitForPreloadComplete(window);
 
   // Reload the window reload to reset the context (useful between tests)
   await window.reload();
